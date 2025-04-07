@@ -455,8 +455,48 @@ def simulate(params, cue_currents, context_currents):
 
     return s
 
-def initialize_params(theta, params):
-    prior_dict = get_prior_dict()
+def get_prior_dict():
+    prior_dict = {
+        "IE_gaba_gS": {'bounds': (-9, -2), 'rescale_function': log_scale_forward},
+        "II_gaba_gS": {'bounds': (-9, -2), 'rescale_function': log_scale_forward},
+        "EI_ampa_gS": {'bounds': (-9, -2), 'rescale_function': log_scale_forward},
+        "EE_ampa_gS": {'bounds': (-9, -2), 'rescale_function': log_scale_forward},
+
+        "IE_dend_gaba_gS": {'bounds': (-9, -2), 'rescale_function': log_scale_forward},
+        "EE_dend_ampa_gS": {'bounds': (-9, -2), 'rescale_function': log_scale_forward},
+        
+        "IE_gaba_pconn": {'bounds': (0, 0.3), 'rescale_function': linear_scale_forward},
+        "II_gaba_pconn": {'bounds': (0, 0.3), 'rescale_function': linear_scale_forward},
+        "EI_ampa_pconn": {'bounds': (0, 0.3), 'rescale_function': linear_scale_forward},
+        "EE_ampa_pconn": {'bounds': (0, 0.3), 'rescale_function': linear_scale_forward},
+
+        "IE_dend_gaba_pconn": {'bounds': (0, 0.3), 'rescale_function': linear_scale_forward},
+        "EE_dend_ampa_pconn": {'bounds': (0, 0.3), 'rescale_function': linear_scale_forward},
+
+        "E_Leak_gLeak": {'bounds': (-9, -2), 'rescale_function': log_scale_forward},
+        "E_dend_Leak_gLeak": {'bounds': (-9, -2), 'rescale_function': log_scale_forward},
+        "I_Leak_gLeak": {'bounds': (-9, -2), 'rescale_function': log_scale_forward},
+
+        'E_Km_gKm': {'bounds': (-9, -2), 'rescale_function': log_scale_forward},
+        'E_CaL_gCaL': {'bounds': (-9, -2), 'rescale_function': log_scale_forward},
+        'E_CaT_gCaT': {'bounds': (-9, -2), 'rescale_function': log_scale_forward},
+        'I_Km_gKm': {'bounds': (-9, -2), 'rescale_function': log_scale_forward},
+        'I_CaL_gCaL': {'bounds': (-9, -2), 'rescale_function': log_scale_forward},
+        'I_CaT_gCaT': {'bounds': (-9, -2), 'rescale_function': log_scale_forward},  
+
+        "E_dend_Km_gKm": {'bounds': (-9, -2), 'rescale_function': log_scale_forward},
+        "E_dend_CaL_gCaL": {'bounds': (-9, -2), 'rescale_function': log_scale_forward},
+        "E_dend_CaT_gCaT": {'bounds': (-9, -2), 'rescale_function': log_scale_forward},    
+        }
+    
+    return prior_dict
+
+def initialize_params(prior_dict, params):
+    key_mapping = {list(param_dict.keys())[0]: idx for idx, param_dict in enumerate(params)}
+    theta_dict = {param_name: param_dict['rescale_function'](thetai[param_idx].numpy(), param_dict['bounds']) for 
+                    param_idx, (param_name, param_dict) in enumerate(prior_dict.items())}
+
+def simulate_sweep(theta, params, cue_currents, context_currents):
     key_order = ["IE_gaba_gS", "II_gaba_gS", "EI_ampa_gS", "EE_ampa_gS",
                  "IE_dend_gaba_gS", "EE_dend_ampa_gS",
                  "IE_gaba_pconn", "II_gaba_pconn", "EI_ampa_pconn", "EE_ampa_pconn",
@@ -496,8 +536,17 @@ def initialize_params(theta, params):
 
         new_vals = np.repeat(theta_dict[param_name], num_vals)
         params[key_idx][param_name] = new_vals
-    return params
 
+
+    net.delete_stimuli()
+    
+    data_stimuli = net.cell(list(gid_ranges['cue'])).branch(0).comp(0).data_stimulate(cue_currents)
+    data_stimuli = net.cell(list(gid_ranges['context'])).branch(0).comp(0).data_stimulate(context_currents, data_stimuli=data_stimuli)
+
+    net.delete_recordings()
+    net.branch(0).comp(0).record('v')
+    s = jx.integrate(net, t_max=t_max, params=params, checkpoint_lengths=checkpoints, data_stimuli=data_stimuli)
+    return s
 
 def loss_fn(opt_params, cue_currents, context_currents, target):
     rate_scale = 1.0
