@@ -32,7 +32,7 @@ from sklearn.linear_model import LinearRegression, Ridge
 from neurodsp.spectral import compute_spectrum
 
 
-data_path = '/users/ntolley/data/ntolley/dendractor/memorycontext_nodendrite'
+data_path = '/users/ntolley/data/ntolley/dendractor/memorycontext_lowaxialres'
 
 def get_prior_dict():
     prior_dict = {
@@ -41,16 +41,16 @@ def get_prior_dict():
         "EI_ampa_gS": {'bounds': (-9, -2), 'rescale_function': log_scale_forward},
         "EE_ampa_gS": {'bounds': (-9, -2), 'rescale_function': log_scale_forward},
 
-        "IE_dend_gaba_gS": {'bounds': (-20, -20), 'rescale_function': log_scale_forward},
-        "EE_dend_ampa_gS": {'bounds': (-20, -20), 'rescale_function': log_scale_forward},
+        "IE_dend_gaba_gS": {'bounds': (-9, -2), 'rescale_function': log_scale_forward},
+        "EE_dend_ampa_gS": {'bounds': (-9, -2), 'rescale_function': log_scale_forward},
         
         "IE_gaba_pconn": {'bounds': (0, 0.3), 'rescale_function': linear_scale_forward},
         "II_gaba_pconn": {'bounds': (0, 0.3), 'rescale_function': linear_scale_forward},
         "EI_ampa_pconn": {'bounds': (0, 0.3), 'rescale_function': linear_scale_forward},
         "EE_ampa_pconn": {'bounds': (0, 0.3), 'rescale_function': linear_scale_forward},
 
-        "IE_dend_gaba_pconn": {'bounds': (0, 0.0), 'rescale_function': linear_scale_forward},
-        "EE_dend_ampa_pconn": {'bounds': (0, 0.0), 'rescale_function': linear_scale_forward},
+        "IE_dend_gaba_pconn": {'bounds': (0, 0.3), 'rescale_function': linear_scale_forward},
+        "EE_dend_ampa_pconn": {'bounds': (0, 0.3), 'rescale_function': linear_scale_forward},
 
         "E_Leak_gLeak": {'bounds': (-9, -2), 'rescale_function': log_scale_forward},
         "E_dend_Leak_gLeak": {'bounds': (-9, -2), 'rescale_function': log_scale_forward},
@@ -145,6 +145,7 @@ if __name__ == "__main__":
     checkpoints = [int(np.ceil(time_points**(1/levels))) for _ in range(levels)]
 
     net, gid_ranges = make_network()
+    net.cell(gid_ranges['E']).set('axial_resistivity', 10.0)
     with open(f'{data_path}/jaxley_net.pkl', 'wb') as f:
         pickle.dump((net, gid_ranges),f)
 

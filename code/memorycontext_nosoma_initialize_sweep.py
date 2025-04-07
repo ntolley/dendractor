@@ -32,25 +32,25 @@ from sklearn.linear_model import LinearRegression, Ridge
 from neurodsp.spectral import compute_spectrum
 
 
-data_path = '/users/ntolley/data/ntolley/dendractor/memorycontext_nodendrite'
+data_path = '/users/ntolley/data/ntolley/dendractor/memorycontext_nosoma'
 
 def get_prior_dict():
     prior_dict = {
-        "IE_gaba_gS": {'bounds': (-9, -2), 'rescale_function': log_scale_forward},
+        "IE_gaba_gS": {'bounds': (-20, -20), 'rescale_function': log_scale_forward},
         "II_gaba_gS": {'bounds': (-9, -2), 'rescale_function': log_scale_forward},
         "EI_ampa_gS": {'bounds': (-9, -2), 'rescale_function': log_scale_forward},
-        "EE_ampa_gS": {'bounds': (-9, -2), 'rescale_function': log_scale_forward},
+        "EE_ampa_gS": {'bounds': (-20, -20), 'rescale_function': log_scale_forward},
 
-        "IE_dend_gaba_gS": {'bounds': (-20, -20), 'rescale_function': log_scale_forward},
-        "EE_dend_ampa_gS": {'bounds': (-20, -20), 'rescale_function': log_scale_forward},
+        "IE_dend_gaba_gS": {'bounds': (-9, -2), 'rescale_function': log_scale_forward},
+        "EE_dend_ampa_gS": {'bounds': (-9, -2), 'rescale_function': log_scale_forward},
         
-        "IE_gaba_pconn": {'bounds': (0, 0.3), 'rescale_function': linear_scale_forward},
+        "IE_gaba_pconn": {'bounds': (0, 0.0), 'rescale_function': linear_scale_forward},
         "II_gaba_pconn": {'bounds': (0, 0.3), 'rescale_function': linear_scale_forward},
         "EI_ampa_pconn": {'bounds': (0, 0.3), 'rescale_function': linear_scale_forward},
-        "EE_ampa_pconn": {'bounds': (0, 0.3), 'rescale_function': linear_scale_forward},
+        "EE_ampa_pconn": {'bounds': (0, 0.0), 'rescale_function': linear_scale_forward},
 
-        "IE_dend_gaba_pconn": {'bounds': (0, 0.0), 'rescale_function': linear_scale_forward},
-        "EE_dend_ampa_pconn": {'bounds': (0, 0.0), 'rescale_function': linear_scale_forward},
+        "IE_dend_gaba_pconn": {'bounds': (0, 0.3), 'rescale_function': linear_scale_forward},
+        "EE_dend_ampa_pconn": {'bounds': (0, 0.3), 'rescale_function': linear_scale_forward},
 
         "E_Leak_gLeak": {'bounds': (-9, -2), 'rescale_function': log_scale_forward},
         "E_dend_Leak_gLeak": {'bounds': (-9, -2), 'rescale_function': log_scale_forward},
@@ -261,6 +261,7 @@ if __name__ == "__main__":
         error_list = np.array(error_list)
         np.save(f'{data_path}/flow_error_{flow_idx}.npy', error_list)
         np.save(f'{data_path}/flow_band_power_{flow_idx}.npy', band_power_avg)
+        np.save(f'{data_path}/flow_spectrum_{flow_idx}.npy', spectrum)
 
         band_power_threshold = np.quantile(band_power_avg, 0.7)
         error_threshold = np.quantile(error_list[band_power_avg > band_power_threshold], 0.3)
