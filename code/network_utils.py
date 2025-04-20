@@ -281,8 +281,14 @@ def make_network():
     cue_ampa_synapse = IonotropicSynapse()
     cue_ampa_synapse.change_name('cue_ampa')
 
+    cue_dend_ampa_synapse = IonotropicSynapse()
+    cue_dend_ampa_synapse.change_name('cue_dend_ampa')
+
     context_ampa_synapse = IonotropicSynapse()
     context_ampa_synapse.change_name('context_ampa')
+
+    context_dend_ampa_synapse = IonotropicSynapse()
+    context_dend_ampa_synapse.change_name('context_dend_ampa')
 
     EI_ampa_synapse = IonotropicSynapse()
     EI_ampa_synapse.change_name('EI_ampa')
@@ -326,9 +332,11 @@ def make_network():
                                          connectivity_matrix=get_conn_matrix(I_indices, I_indices, seed=126))
 
     sparse_connect(net.cell(gid_ranges['cue']).branch(0).comp(0), net.cell(gid_ranges['E']).branch(0).comp(0), synapse_type=cue_ampa_synapse, p=0.1)
+    sparse_connect(net.cell(gid_ranges['cue']).branch(0).comp(0), net.cell(gid_ranges['E']).branch(3).comp(3), synapse_type=cue_dend_ampa_synapse, p=0.1)
     sparse_connect(net.cell(gid_ranges['cue']).branch(0).comp(0), net.cell(gid_ranges['I']).branch(0).comp(0), synapse_type=cue_ampa_synapse, p=0.1)
 
     sparse_connect(net.cell(gid_ranges['context']).branch(0).comp(0), net.cell(gid_ranges['E']).branch(0).comp(0), synapse_type=context_ampa_synapse, p=0.1)
+    sparse_connect(net.cell(gid_ranges['context']).branch(0).comp(0), net.cell(gid_ranges['E']).branch(3).comp(3), synapse_type=context_dend_ampa_synapse, p=0.1)
     sparse_connect(net.cell(gid_ranges['context']).branch(0).comp(0), net.cell(gid_ranges['I']).branch(0).comp(0), synapse_type=context_ampa_synapse, p=0.1)
 
     connectivity_matrix_connect(net.cell(gid_ranges['E']).branch(0).comp(0), net.cell(gid_ranges['E_rate']).branch(0).comp(0),
@@ -342,6 +350,7 @@ def make_network():
 
 def set_train_parameters(net, gid_ranges):
     net.set('IE_gaba_e_syn', -80.0)
+    net.set('IE_dend_gaba_e_syn', -80.0)
     net.set('II_gaba_e_syn', -80.0)
 
     k_minus = 0.1
@@ -351,8 +360,10 @@ def set_train_parameters(net, gid_ranges):
     net.set('IE_gaba_k_minus', k_minus)
     net.set('IE_dend_gaba_k_minus', k_minus)
     net.set('II_gaba_k_minus', k_minus)
-    net.set('cue_ampa_k_minus', 0.1)
-    net.set('context_ampa_k_minus', 0.1)
+    net.set('cue_ampa_k_minus', k_minus)
+    net.set('cue_dend_ampa_k_minus', k_minus)
+    net.set('context_ampa_k_minus', k_minus)
+    net.set('context_dend_ampa_k_minus', k_minus)
 
     net.set('EE_ampa_gS', 1e-5)
     net.set('EE_dend_ampa_gS', 1e-5)
@@ -361,7 +372,9 @@ def set_train_parameters(net, gid_ranges):
     net.set('IE_dend_gaba_gS', 5e-5)
     net.set('II_gaba_gS', 1e-5)
     net.set('cue_ampa_gS', 1e-3)
-    net.set('context_ampa_gS', 1e-3)
+    net.set('cue_dend_ampa_gS', 1e-3)
+    net.set('context_ampa_gS', 1e-20)
+    net.set('context_dend_ampa_gS', 1e-20)
 
     net.set('exp_synapse_e_syn', 10.0)
     net.set('exp_synapse_k_minus', 0.1)
@@ -383,7 +396,9 @@ def set_train_parameters(net, gid_ranges):
     net.select(edges="all").make_trainable("IE_dend_gaba_gS")
 
     net.select(edges="all").make_trainable('cue_ampa_gS')
+    net.select(edges="all").make_trainable('cue_dend_ampa_gS')
     net.select(edges="all").make_trainable('context_ampa_gS')
+    net.select(edges="all").make_trainable('context_dend_ampa_gS')
 
     net.select(edges="all").make_trainable("E_Leak_gLeak")
     net.select(edges="all").make_trainable("E_dend_Leak_gLeak")
@@ -417,7 +432,9 @@ def set_train_parameters(net, gid_ranges):
         {"IE_dend_gaba_gS": jt.SigmoidTransform(0.0, 1e-1)},
 
         {'cue_ampa_gS': jt.SigmoidTransform(0.0, 1e-1)},
+        {'cue_dend_ampa_gS': jt.SigmoidTransform(0.0, 1e-1)},
         {'context_ampa_gS': jt.SigmoidTransform(0.0, 1e-1)},
+        {'context_dend_ampa_gS': jt.SigmoidTransform(0.0, 1e-1)},
 
         {'E_Leak_gLeak': jt.SigmoidTransform(0.0, 1e-1)},
         {'E_dend_Leak_gLeak': jt.SigmoidTransform(0.0, 1e-1)},
@@ -456,20 +473,29 @@ def simulate(params, cue_currents, context_currents):
     return s
 
 def get_prior_dict():
+    # Default is cue->soma, context->dend, cell->soma+dend
     prior_dict = {
+        "cue_ampa_gS": {'bounds': (-3, -3), 'rescale_function': log_scale_forward},
+        "context_ampa_gS": {'bounds': (-3, -3), 'rescale_function': log_scale_forward},
         "IE_gaba_gS": {'bounds': (-9, -2), 'rescale_function': log_scale_forward},
         "II_gaba_gS": {'bounds': (-9, -2), 'rescale_function': log_scale_forward},
         "EI_ampa_gS": {'bounds': (-9, -2), 'rescale_function': log_scale_forward},
         "EE_ampa_gS": {'bounds': (-9, -2), 'rescale_function': log_scale_forward},
 
+        "cue_dend_ampa_gS": {'bounds': (-20, -20), 'rescale_function': log_scale_forward},
+        "context_dend_ampa_gS": {'bounds': (-20, -20), 'rescale_function': log_scale_forward},
         "IE_dend_gaba_gS": {'bounds': (-9, -2), 'rescale_function': log_scale_forward},
         "EE_dend_ampa_gS": {'bounds': (-9, -2), 'rescale_function': log_scale_forward},
         
+        "cue_ampa_pconn": {'bounds': (1.0, 1.0), 'rescale_function': linear_scale_forward},
+        "context_ampa_pconn": {'bounds': (1.0, 1.0), 'rescale_function': linear_scale_forward},
         "IE_gaba_pconn": {'bounds': (0, 0.3), 'rescale_function': linear_scale_forward},
         "II_gaba_pconn": {'bounds': (0, 0.3), 'rescale_function': linear_scale_forward},
         "EI_ampa_pconn": {'bounds': (0, 0.3), 'rescale_function': linear_scale_forward},
         "EE_ampa_pconn": {'bounds': (0, 0.3), 'rescale_function': linear_scale_forward},
 
+        "cue_dend_ampa_pconn": {'bounds': (0.0, 0.0), 'rescale_function': linear_scale_forward},
+        "context_dend_ampa_pconn": {'bounds': (0.0, 0.0), 'rescale_function': linear_scale_forward},
         "IE_dend_gaba_pconn": {'bounds': (0, 0.3), 'rescale_function': linear_scale_forward},
         "EE_dend_ampa_pconn": {'bounds': (0, 0.3), 'rescale_function': linear_scale_forward},
 
@@ -496,57 +522,62 @@ def initialize_params(prior_dict, params):
     theta_dict = {param_name: param_dict['rescale_function'](thetai[param_idx].numpy(), param_dict['bounds']) for 
                     param_idx, (param_name, param_dict) in enumerate(prior_dict.items())}
 
-def simulate_sweep(theta, params, cue_currents, context_currents):
-    key_order = ["IE_gaba_gS", "II_gaba_gS", "EI_ampa_gS", "EE_ampa_gS",
-                 "IE_dend_gaba_gS", "EE_dend_ampa_gS",
-                 "IE_gaba_pconn", "II_gaba_pconn", "EI_ampa_pconn", "EE_ampa_pconn",
-                 "IE_dend_gaba_pconn", "EE_dend_ampa_pconn",
-                 "E_Leak_gLeak", "E_dend_Leak_gLeak", "I_Leak_gLeak",
-                 "E_Km_gKm", "E_CaL_gCaL", "E_CaT_gCaT", "I_Km_gKm", "I_CaL_gCaL", "I_CaT_gCaT",
-                 "E_dend_Km_gKm", "E_dend_CaL_gCaL", "E_dend_CaT_gCaT",]
+# def simulate_sweep(theta, params, cue_currents, context_currents, prior_dict):
+#     key_order = ["cue_ampa_gS", "context_ampa_gS",
+#                  "IE_gaba_gS", "II_gaba_gS", "EI_ampa_gS", "EE_ampa_gS",
+#                  "cue_dend_ampa_gS", "context_dend_ampa_gS",
+#                  "IE_dend_gaba_gS", "EE_dend_ampa_gS",
+#                  "cue_ampa_pconn", "context_ampa_pconn",
+#                  "IE_gaba_pconn", "II_gaba_pconn", "EI_ampa_pconn", "EE_ampa_pconn",
+#                  "cue_dend_ampa_pconn", "context_dend_ampa_pconn",
+#                  "IE_dend_gaba_pconn", "EE_dend_ampa_pconn",
+#                  "E_Leak_gLeak", "E_dend_Leak_gLeak", "I_Leak_gLeak",
+#                  "E_Km_gKm", "E_CaL_gCaL", "E_CaT_gCaT", "I_Km_gKm", "I_CaL_gCaL", "I_CaT_gCaT",
+#                  "E_dend_Km_gKm", "E_dend_CaL_gCaL", "E_dend_CaT_gCaT",]
 
-    # params is a list of single element dicitonaries, this is to just find the index
-    key_mapping = {list(param_dict.keys())[0]: idx for idx, param_dict in enumerate(params)}
-    theta_dict = {param_name: prior_dict[param_name]['rescale_function'](
-        theta[param_idx], prior_dict[param_name]['bounds']) for 
-        param_idx, param_name in enumerate(key_order)}
+#     # params is a list of single element dicitonaries, this is to just find the index
+#     key_mapping = {list(param_dict.keys())[0]: idx for idx, param_dict in enumerate(params)}
+#     theta_dict = {param_name: prior_dict[param_name]['rescale_function'](
+#         theta[param_idx], prior_dict[param_name]['bounds']) for 
+#         param_idx, param_name in enumerate(key_order)}
 
-    # Need to treat connections with special care
-    # First create vector with identicial conductances for every synapse
-    # Then mask out connections based on their probability
-    for conn_name in ["IE_gaba", "II_gaba", "EI_ampa", "EE_ampa", "IE_dend_gaba", "EE_dend_ampa"]:
-        conn_g_name = f'{conn_name}_gS'
-        conn_prob_name = f'{conn_name}_pconn'
-        key_idx = key_mapping[conn_g_name]
-        num_vals = len(params[key_idx][conn_g_name])
+#     # Need to treat connections with special care
+#     # First create vector with identicial conductances for every synapse
+#     # Then mask out connections based on their probability
+#     for conn_name in ["cue_ampa", "context_ampa", "cue_dend_ampa", "context_dend_ampa",
+#                       "IE_gaba", "II_gaba", "EI_ampa", "EE_ampa", "IE_dend_gaba", "EE_dend_ampa"]:
+#         conn_g_name = f'{conn_name}_gS'
+#         conn_prob_name = f'{conn_name}_pconn'
+#         key_idx = key_mapping[conn_g_name]
+#         num_vals = len(params[key_idx][conn_g_name])
 
-        new_vals = np.repeat(theta_dict[conn_g_name], num_vals)
-        mask = np.random.uniform(0, 1, size=num_vals) < theta_dict[conn_prob_name]
-        new_vals = new_vals * mask
+#         new_vals = np.repeat(theta_dict[conn_g_name], num_vals)
+#         mask = np.random.uniform(0, 1, size=num_vals) < theta_dict[conn_prob_name]
+#         new_vals = new_vals * mask
 
-        params[key_idx][conn_g_name] = new_vals
+#         params[key_idx][conn_g_name] = new_vals
 
-    # No prob masking for biophysics, just update param vectors
-    for param_name in ["E_Leak_gLeak", "E_dend_Leak_gLeak", "I_Leak_gLeak",
-                       "E_Km_gKm", "E_CaL_gCaL", "E_CaT_gCaT",
-                       "I_Km_gKm", "I_CaL_gCaL", "I_CaT_gCaT",
-                       "E_dend_Km_gKm", "E_dend_CaL_gCaL", "E_dend_CaT_gCaT",]:
-        key_idx = key_mapping[param_name]
-        num_vals = len(params[key_idx][param_name])
+#     # No prob masking for biophysics, just update param vectors
+#     for param_name in ["E_Leak_gLeak", "E_dend_Leak_gLeak", "I_Leak_gLeak",
+#                        "E_Km_gKm", "E_CaL_gCaL", "E_CaT_gCaT",
+#                        "I_Km_gKm", "I_CaL_gCaL", "I_CaT_gCaT",
+#                        "E_dend_Km_gKm", "E_dend_CaL_gCaL", "E_dend_CaT_gCaT",]:
+#         key_idx = key_mapping[param_name]
+#         num_vals = len(params[key_idx][param_name])
 
-        new_vals = np.repeat(theta_dict[param_name], num_vals)
-        params[key_idx][param_name] = new_vals
+#         new_vals = np.repeat(theta_dict[param_name], num_vals)
+#         params[key_idx][param_name] = new_vals
 
 
-    net.delete_stimuli()
+#     net.delete_stimuli()
     
-    data_stimuli = net.cell(list(gid_ranges['cue'])).branch(0).comp(0).data_stimulate(cue_currents)
-    data_stimuli = net.cell(list(gid_ranges['context'])).branch(0).comp(0).data_stimulate(context_currents, data_stimuli=data_stimuli)
+#     data_stimuli = net.cell(list(gid_ranges['cue'])).branch(0).comp(0).data_stimulate(cue_currents)
+#     data_stimuli = net.cell(list(gid_ranges['context'])).branch(0).comp(0).data_stimulate(context_currents, data_stimuli=data_stimuli)
 
-    net.delete_recordings()
-    net.branch(0).comp(0).record('v')
-    s = jx.integrate(net, t_max=t_max, params=params, checkpoint_lengths=checkpoints, data_stimuli=data_stimuli)
-    return s
+#     net.delete_recordings()
+#     net.branch(0).comp(0).record('v')
+#     s = jx.integrate(net, t_max=t_max, params=params, checkpoint_lengths=checkpoints, data_stimuli=data_stimuli)
+#     return s
 
 def loss_fn(opt_params, cue_currents, context_currents, target):
     rate_scale = 1.0
