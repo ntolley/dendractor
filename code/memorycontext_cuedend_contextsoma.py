@@ -26,72 +26,25 @@ from sbi import utils as utils
 from tqdm import tqdm
 
 from network_utils import (make_network, set_train_parameters, get_currents, log_scale_forward, linear_scale_forward,
-                           get_prior_dict, initialize_params)
+                           get_prior_dict, initialize_params, simulate_sweep)
 from flow_utils import UniformPrior, PriorFiltered
 from sklearn.linear_model import LinearRegression, Ridge
 
 from neurodsp.spectral import compute_spectrum
 
 
-data_path = '/users/ntolley/data/ntolley/dendractor/memorycontext_dendrite'
+data_path = '/users/ntolley/data/ntolley/dendractor/memorycontext_cuedend_contextsoma'
 
-def simulate_sweep(theta, params, cue_currents, context_currents):
-    key_order = ["cue_ampa_gS", "context_ampa_gS",
-                 "IE_gaba_gS", "II_gaba_gS", "EI_ampa_gS", "EE_ampa_gS",
-                 "cue_dend_ampa_gS", "context_dend_ampa_gS",
-                 "IE_dend_gaba_gS", "EE_dend_ampa_gS",
-                 "cue_ampa_pconn", "context_ampa_pconn",
-                 "IE_gaba_pconn", "II_gaba_pconn", "EI_ampa_pconn", "EE_ampa_pconn",
-                 "cue_dend_ampa_pconn", "context_dend_ampa_pconn",
-                 "IE_dend_gaba_pconn", "EE_dend_ampa_pconn",
-                 "E_Leak_gLeak", "E_dend_Leak_gLeak", "I_Leak_gLeak",
-                 "E_Km_gKm", "E_CaL_gCaL", "E_CaT_gCaT", "I_Km_gKm", "I_CaL_gCaL", "I_CaT_gCaT",
-                 "E_dend_Km_gKm", "E_dend_CaL_gCaL", "E_dend_CaT_gCaT",]
+def update_prior_dict_cuedend_contextsoma(prior_dict):
+    prior_dict['cue_ampa_gS']['bounds'] = (-20, -20)
+    prior_dict['context_ampa_gS']['bounds'] = (-3, -3)
+    prior_dict['cue_ampa_pconn']['bounds'] = (0, 0)
+    prior_dict['context_ampa_pconn']['bounds'] = (1, 1)
 
-    # params is a list of single element dicitonaries, this is to just find the index
-    key_mapping = {list(param_dict.keys())[0]: idx for idx, param_dict in enumerate(params)}
-    theta_dict = {param_name: prior_dict[param_name]['rescale_function'](
-        theta[param_idx], prior_dict[param_name]['bounds']) for 
-        param_idx, param_name in enumerate(key_order)}
-
-    # Need to treat connections with special care
-    # First create vector with identicial conductances for every synapse
-    # Then mask out connections based on their probability
-    for conn_name in ["cue_ampa", "context_ampa", "cue_dend_ampa", "context_dend_ampa",
-                      "IE_gaba", "II_gaba", "EI_ampa", "EE_ampa", "IE_dend_gaba", "EE_dend_ampa"]:
-        conn_g_name = f'{conn_name}_gS'
-        conn_prob_name = f'{conn_name}_pconn'
-        key_idx = key_mapping[conn_g_name]
-        num_vals = len(params[key_idx][conn_g_name])
-
-        new_vals = np.repeat(theta_dict[conn_g_name], num_vals)
-        mask = np.random.uniform(0, 1, size=num_vals) < theta_dict[conn_prob_name]
-        new_vals = new_vals * mask
-
-        params[key_idx][conn_g_name] = new_vals
-
-    # No prob masking for biophysics, just update param vectors
-    for param_name in ["E_Leak_gLeak", "E_dend_Leak_gLeak", "I_Leak_gLeak",
-                       "E_Km_gKm", "E_CaL_gCaL", "E_CaT_gCaT",
-                       "I_Km_gKm", "I_CaL_gCaL", "I_CaT_gCaT",
-                       "E_dend_Km_gKm", "E_dend_CaL_gCaL", "E_dend_CaT_gCaT",]:
-        key_idx = key_mapping[param_name]
-        num_vals = len(params[key_idx][param_name])
-
-        new_vals = np.repeat(theta_dict[param_name], num_vals)
-        params[key_idx][param_name] = new_vals
-
-
-    net.delete_stimuli()
-    
-    data_stimuli = net.cell(list(gid_ranges['cue'])).branch(0).comp(0).data_stimulate(cue_currents)
-    data_stimuli = net.cell(list(gid_ranges['context'])).branch(0).comp(0).data_stimulate(context_currents, data_stimuli=data_stimuli)
-
-    net.delete_recordings()
-    net.branch(0).comp(0).record('v')
-    s = jx.integrate(net, t_max=t_max, params=params, checkpoint_lengths=checkpoints, data_stimuli=data_stimuli)
-    return s
-
+    prior_dict['cue_dend_ampa_gS']['bounds'] = (-3, -3)
+    prior_dict['context_dend_ampa_gS']['bounds'] = (-20, -20)
+    prior_dict['cue_dend_ampa_pconn']['bounds'] = (1, 1)
+    prior_dict['context_dend_ampa_pconn']['bounds'] = (0, 0)
 if __name__ == "__main__":
     dt = 0.025
     t_max = 2000
@@ -104,9 +57,7 @@ if __name__ == "__main__":
     burn_in = int(8000 / downsample_factor)
 
     prior_dict = get_prior_dict()
-    # Modify prior dict for experiment condition
-    # (No change for this script)
-
+    update_prior_dict_cuedend_contextsoma(prior_dict)
     # Used to reduce GPU memory (passed to simulate function)
     levels = 2
     time_points = t_max // dt + 2
@@ -200,7 +151,6 @@ if __name__ == "__main__":
         freq_mask = np.logical_and(freqs > 10, freqs < 40)
         # total_mask = freqs < 1000
         avg_spectrum = np.mean(spectrum, axis=1)
-        np.save(f'{data_path}/avg_spectrum_{flow_idx}.npy', avg_spectrum)
         band_power = np.sum(avg_spectrum[:, freq_mask], axis=1)
         # total_power = np.sum(avg_spectrum[:, total_mask], axis=1)
         # band_power = band_power / total_power # normalize by total spectral power
@@ -230,6 +180,7 @@ if __name__ == "__main__":
         error_list = np.array(error_list)
         np.save(f'{data_path}/flow_error_{flow_idx}.npy', error_list)
         np.save(f'{data_path}/flow_band_power_{flow_idx}.npy', band_power_avg)
+        np.save(f'{data_path}/flow_spectrum_{flow_idx}.npy', spectrum)
 
         band_power_threshold = np.quantile(band_power_avg, 0.7)
         error_threshold = np.quantile(error_list[band_power_avg > band_power_threshold], 0.3)

@@ -33,14 +33,18 @@ from sklearn.linear_model import LinearRegression, Ridge
 from neurodsp.spectral import compute_spectrum
 
 
-data_path = '/users/ntolley/data/ntolley/dendractor/memorycontext_nodendrite'
+data_path = '/users/ntolley/data/ntolley/dendractor/memorycontext_cuedend_contextdend'
 
+def update_prior_dict_cuedend_contextdend(prior_dict):
+    prior_dict['cue_ampa_gS']['bounds'] = (-20, -20)
+    prior_dict['context_ampa_gS']['bounds'] = (-20, -20)
+    prior_dict['cue_ampa_pconn']['bounds'] = (0, 0)
+    prior_dict['context_ampa_pconn']['bounds'] = (0, 0)
 
-def update_prior_dict_nodendrite(prior_dict):
-    prior_dict['IE_dend_gaba_gS']['bounds'] = (-20, -20)
-    prior_dict['EE_dend_ampa_gS']['bounds'] = (-20, -20)
-    prior_dict['IE_dend_gaba_pconn']['bounds'] = (0, 0.0)
-    prior_dict['EE_dend_ampa_pconn']['bounds'] = (0, 0.0)
+    prior_dict['cue_dend_ampa_gS']['bounds'] = (-3, -3)
+    prior_dict['context_dend_ampa_gS']['bounds'] = (-3, -3)
+    prior_dict['cue_dend_ampa_pconn']['bounds'] = (1, 1)
+    prior_dict['context_dend_ampa_pconn']['bounds'] = (1, 1)
 
 def simulate_sweep(theta, params, cue_currents, context_currents):
     key_order = ["cue_ampa_gS", "context_ampa_gS",
@@ -111,19 +115,18 @@ if __name__ == "__main__":
     burn_in = int(8000 / downsample_factor)
 
     prior_dict = get_prior_dict()
-    update_prior_dict_nodendrite(prior_dict)
-
+    update_prior_dict_cuedend_contextdend(prior_dict)
     # Used to reduce GPU memory (passed to simulate function)
     levels = 2
     time_points = t_max // dt + 2
     checkpoints = [int(np.ceil(time_points**(1/levels))) for _ in range(levels)]
 
-    net, gid_ranges = make_network()
-    with open(f'{data_path}/jaxley_net.pkl', 'wb') as f:
-        pickle.dump((net, gid_ranges),f)
+    # net, gid_ranges = make_network()
+    # with open(f'{data_path}/jaxley_net.pkl', 'wb') as f:
+    #     pickle.dump((net, gid_ranges),f)
 
-    # with open(f'{data_path}/jaxley_net.pkl', 'rb') as f:
-    #     net, gid_ranges = pickle.load(f)
+    with open(f'{data_path}/jaxley_net.pkl', 'rb') as f:
+        net, gid_ranges = pickle.load(f)
 
     num_E_cells, num_I_cells = len(gid_ranges['E']), len(gid_ranges['I'])
     num_cue_cells = len(gid_ranges['cue'])
