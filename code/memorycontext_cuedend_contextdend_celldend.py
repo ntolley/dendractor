@@ -33,9 +33,9 @@ from sklearn.linear_model import LinearRegression, Ridge
 from neurodsp.spectral import compute_spectrum
 
 
-data_path = '/users/ntolley/data/ntolley/dendractor/memorycontext_cuedend_contextdend'
+data_path = '/users/ntolley/data/ntolley/dendractor/memorycontext_cuedend_contextdend_celldend'
 
-def update_prior_dict_cuedend_contextdend(prior_dict):
+def update_prior_dict_cuedend_contextdend_cell_dend(prior_dict):
     prior_dict['cue_ampa_gS']['bounds'] = (-20, -20)
     prior_dict['context_ampa_gS']['bounds'] = (-20, -20)
     prior_dict['cue_ampa_pconn']['bounds'] = (0, 0)
@@ -45,6 +45,18 @@ def update_prior_dict_cuedend_contextdend(prior_dict):
     prior_dict['context_dend_ampa_gS']['bounds'] = (-3, -3)
     prior_dict['cue_dend_ampa_pconn']['bounds'] = (1, 1)
     prior_dict['context_dend_ampa_pconn']['bounds'] = (1, 1)
+
+    prior_dict['IE_gaba_gS']['bounds'] = (-20, -20)
+    prior_dict['EE_ampa_gS']['bounds'] = (-20, -20)
+
+    prior_dict['IE_gaba_pconn']['bounds'] =  (0, 0)
+    prior_dict['EE_ampa_pconn']['bounds'] = (0, 0)
+
+    prior_dict['IE_dend_gaba_gS']['bounds'] = (-9, -2)
+    prior_dict['EE_dend_ampa_gS']['bounds'] = (-9, -2)
+    
+    prior_dict['IE_dend_gaba_pconn']['bounds'] =  (0, 0.3)
+    prior_dict['EE_dend_ampa_pconn']['bounds'] = (0, 0.3)
 
 def simulate_sweep(theta, params, cue_currents, context_currents):
     key_order = ["cue_ampa_gS", "context_ampa_gS",
@@ -115,7 +127,7 @@ if __name__ == "__main__":
     burn_in = int(8000 / downsample_factor)
 
     prior_dict = get_prior_dict()
-    update_prior_dict_cuedend_contextdend(prior_dict)
+    update_prior_dict_cuedend_contextdend_celldend(prior_dict)
     # Used to reduce GPU memory (passed to simulate function)
     levels = 2
     time_points = t_max // dt + 2
