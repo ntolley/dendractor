@@ -209,6 +209,7 @@ if __name__ == "__main__":
         freq_mask = np.logical_and(freqs > 10, freqs < 40)
         # total_mask = freqs < 1000
         avg_spectrum = np.mean(spectrum, axis=1)
+        np.save(f'{data_path}/avg_spectrum_{flow_idx}.npy', avg_spectrum)
         band_power = np.sum(avg_spectrum[:, freq_mask], axis=1)
         # total_power = np.sum(avg_spectrum[:, total_mask], axis=1)
         # band_power = band_power / total_power # normalize by total spectral power

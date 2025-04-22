@@ -35,7 +35,7 @@ from neurodsp.spectral import compute_spectrum
 
 data_path = '/users/ntolley/data/ntolley/dendractor/memorycontext_cuedend_contextdend_celldend'
 
-def update_prior_dict_cuedend_contextdend_cell_dend(prior_dict):
+def update_prior_dict_cuedend_contextdend_celldend(prior_dict):
     prior_dict['cue_ampa_gS']['bounds'] = (-20, -20)
     prior_dict['context_ampa_gS']['bounds'] = (-20, -20)
     prior_dict['cue_ampa_pconn']['bounds'] = (0, 0)
