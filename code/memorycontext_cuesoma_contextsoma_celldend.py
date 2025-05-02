@@ -33,10 +33,10 @@ from sklearn.linear_model import LinearRegression, Ridge
 from neurodsp.spectral import compute_spectrum
 
 
-data_path = '/users/ntolley/data/ntolley/dendractor/memorycontext_cuesoma_contextsoma_cellsoma'
+data_path = '/users/ntolley/data/ntolley/dendractor/memorycontext_cuesoma_contextsoma_celldend'
 
 
-def update_prior_dict_cuesoma_contextsoma_cellsoma(prior_dict):
+def update_prior_dict_cuesoma_contextsoma_celldend(prior_dict):
     prior_dict['cue_ampa_gS']['bounds'] = (-3, -3)
     prior_dict['context_ampa_gS']['bounds'] = (-3, -3)
     prior_dict['cue_ampa_pconn']['bounds'] = (1, 1)
@@ -128,7 +128,7 @@ if __name__ == "__main__":
     burn_in = int(8000 / downsample_factor)
 
     prior_dict = get_prior_dict()
-    update_prior_dict_cuesoma_contextsoma_cellsoma(prior_dict)
+    update_prior_dict_cuesoma_contextsoma_celldend(prior_dict)
 
     # Used to reduce GPU memory (passed to simulate function)
     levels = 2
