@@ -182,9 +182,9 @@ if __name__ == "__main__":
         # 'cuedend_contextdend': {'data_path': data_path_cuedend_contextdend, 'update_prior': update_prior_dict_cuedend_contextdend, 'flow_idx': 4},
         # 'cuesoma_contextdend': {'data_path': data_path_cuesoma_contextdend, 'update_prior': update_prior_dict_cuesoma_contextdend, 'flow_idx': 4},
         # 'cuedend_contextsoma': {'data_path': data_path_cuedend_contextsoma, 'update_prior': update_prior_dict_cuedend_contextsoma, 'flow_idx': 4},
-        # 'cuesoma_contextsoma_cellsoma': {'data_path': data_path_cuesoma_contextsoma_cellsoma, 'update_prior': update_prior_dict_cuesoma_contextsoma_cellsoma, 'flow_idx': 4},
+        'cuesoma_contextsoma_cellsoma': {'data_path': data_path_cuesoma_contextsoma_cellsoma, 'update_prior': update_prior_dict_cuesoma_contextsoma_cellsoma, 'flow_idx': 4},
         # 'cuedend_contextdend_celldend': {'data_path': data_path_cuedend_contextdend_celldend, 'update_prior': update_prior_dict_cuedend_contextdend_celldend, 'flow_idx': 4},
-        'cuesoma_contextsoma_celldend': {'data_path': data_path_cuesoma_contextsoma_celldend, 'update_prior': update_prior_dict_cuesoma_contextsoma_celldend, 'flow_idx': 3},
+        # 'cuesoma_contextsoma_celldend': {'data_path': data_path_cuesoma_contextsoma_celldend, 'update_prior': update_prior_dict_cuesoma_contextsoma_celldend, 'flow_idx': 3},
     }
 
     for name, path_dict in res_paths.items():
@@ -213,6 +213,7 @@ if __name__ == "__main__":
         cue_currents = jnp.stack([input_data[idx][0] for idx in range(num_cond)])
         context_currents = jnp.stack([input_data[idx][1] for idx in range(num_cond)])
         targets = np.concatenate([input_data[idx][2][:2, ::downsample_factor] for idx in range(num_cond)], axis=1).T
+        targets_concat = jnp.stack([input_data[idx][2][:2, ::downsample_factor] for idx in range(num_cond)])
 
         batch_size = 1
         cue_currents_batch = jnp.tile(cue_currents, (batch_size, 1, 1))
@@ -239,6 +240,7 @@ if __name__ == "__main__":
             'name': name,
             'output_array': output_array,
             'targets': targets,
+            'targets_concat': targets_concat,
             'input_list': input_list,
             'theta': theta,
             'gid_ranges': gid_ranges
