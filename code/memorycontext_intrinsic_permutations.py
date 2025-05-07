@@ -31,33 +31,21 @@ from flow_utils import UniformPrior, PriorFiltered
 from sklearn.linear_model import LinearRegression, Ridge
 
 from neurodsp.spectral import compute_spectrum
+import intrinsic_prior_configurations as prior_config
 
+save_path = '/users/ntolley/data/ntolley/dendractor/intrinsic_permutations'
 
-data_path = '/users/ntolley/data/ntolley/dendractor/memorycontext_cuesoma_contextsoma_celldend'
+config_list = [
+    ('Esoma_Isoma', prior_config.update_prior_dict_Esoma_Isoma), # 1
+    ('Edend_Idend', prior_config.update_prior_dict_Edend_Idend), # 2
+    ('Esoma_Idend', prior_config.update_prior_dict_Esoma_Idend), # 3
+    ('Edend_Isoma', prior_config.update_prior_dict_Edend_Isoma), # 4
+    ('Esoma_Isomadend', prior_config.update_prior_dict_Esoma_Isomadend), # 5
+    ('Edend_Isomadend', prior_config.update_prior_dict_Edend_Isomadend), # 6
+    ('Esomadend_Isoma', prior_config.update_prior_dict_Esomadend_Isoma), # 7
+    ('Esomadend_Idend', prior_config.update_prior_dict_Esomadend_Idend), # 8
+    ('Esomadend_Isomadend', prior_config.update_prior_dict_Esomadend_Isomadend)] # 9
 
-
-def update_prior_dict_cuesoma_contextsoma_celldend(prior_dict):
-    prior_dict['cue_ampa_gS']['bounds'] = (-3, -3)
-    prior_dict['context_ampa_gS']['bounds'] = (-3, -3)
-    prior_dict['cue_ampa_pconn']['bounds'] = (1, 1)
-    prior_dict['context_ampa_pconn']['bounds'] = (1, 1)
-
-    prior_dict['cue_dend_ampa_gS']['bounds'] = (-20, -20)
-    prior_dict['context_dend_ampa_gS']['bounds'] = (-20, -20)
-    prior_dict['cue_dend_ampa_pconn']['bounds'] = (0, 0)
-    prior_dict['context_dend_ampa_pconn']['bounds'] = (0, 0)
-
-    prior_dict['IE_gaba_gS']['bounds'] = (-20, -20)
-    prior_dict['EE_ampa_gS']['bounds'] = (-20, -20)
-
-    prior_dict['IE_gaba_pconn']['bounds'] =  (0, 0.0)
-    prior_dict['EE_ampa_pconn']['bounds'] = (0, 0.0)
-
-    prior_dict['IE_dend_gaba_gS']['bounds'] = (-9, -2)
-    prior_dict['EE_dend_ampa_gS']['bounds'] = (-9, -2)
-    
-    prior_dict['IE_dend_gaba_pconn']['bounds'] =  (0, 0.3)
-    prior_dict['EE_dend_ampa_pconn']['bounds'] = (0, 0.3)
 
 def simulate_sweep(theta, params, cue_currents, context_currents):
     key_order = ["cue_ampa_gS", "context_ampa_gS",
@@ -117,6 +105,15 @@ def simulate_sweep(theta, params, cue_currents, context_currents):
     return s
 
 if __name__ == "__main__":
+    # Pull config name and prior dict update function
+    job_id = int(sys.argv[1])
+    config_name, update_prior_dict = config_list[job_id]
+    print(f'Running {config_name}')
+
+    # Set up folder paths
+    data_path = f'{save_path}/{config_name}'
+    os.makedirs(f'{data_path}/tmp', exist_ok=True)
+
     dt = 0.025
     t_max = 2000
     time_vec = jnp.arange(0, t_max, dt)
@@ -128,7 +125,7 @@ if __name__ == "__main__":
     burn_in = int(8000 / downsample_factor)
 
     prior_dict = get_prior_dict()
-    update_prior_dict_cuesoma_contextsoma_celldend(prior_dict)
+    update_prior_dict(prior_dict)
 
     # Used to reduce GPU memory (passed to simulate function)
     levels = 2
@@ -148,14 +145,12 @@ if __name__ == "__main__":
     # prepare samples for parameter sweep
     params, _ = set_train_parameters(net, gid_ranges)
 
-    num_simulations = 250
-    # num_simulations = 50
+    # num_simulations = 250
     num_prior_fits = 5
     num_iter = 5000
 
     input_list = jnp.array([[-2,-2,1], [2,2,1], [-2, 2,1], [2,-2,1],
                             [-2,-2,-1], [2,2,-1], [-2, 2,-1], [2,-2,-1]])
-    # input_list = jnp.array([[-2,-2,1]])
     num_cond = input_list.shape[0]
     input_data = [get_currents(input_list[idx], gid_ranges, t_max, dt) for idx in range(num_cond)]
     cue_currents = jnp.stack([input_data[idx][0] for idx in range(num_cond)])
@@ -200,8 +195,10 @@ if __name__ == "__main__":
         for fname in fname_list:
             output_list.append(np.load(fname))
         output_array = np.concatenate(output_list)
-        if flow_idx == num_prior_fits - 1:
-            np.save(f'{data_path}/x_out_{flow_idx}.npy', output_array)
+
+        # Save whole simulation output
+        # if flow_idx == num_prior_fits - 1:
+        #     np.save(f'{data_path}/x_out_{flow_idx}.npy', output_array)
 
         # Clean up temp files
         files = glob.glob(f'{data_path}/tmp/*')
@@ -225,8 +222,6 @@ if __name__ == "__main__":
         avg_spectrum = np.mean(spectrum, axis=1)
         np.save(f'{data_path}/avg_spectrum_{flow_idx}.npy', avg_spectrum)
         band_power = np.sum(avg_spectrum[:, freq_mask], axis=1)
-        # total_power = np.sum(avg_spectrum[:, total_mask], axis=1)
-        # band_power = band_power / total_power # normalize by total spectral power
 
         x_train = list()
         band_power_avg = list()
