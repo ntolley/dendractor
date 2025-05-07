@@ -2,11 +2,11 @@
 #SBATCH -J intrinsic_permutations
 #SBATCH -N 1
 #SBATCH -n 16
-#SBATCH -t 2:00:00
+#SBATCH -t 20:00:00
 #SBATCH --mem=200G
 #SBATCH --account carney-sjones-condo
 #SBATCH -p gpu --gres=gpu:1
-#SBATCH --array=0-1
+#SBATCH --array=0-8
 
 # Specify an output file
 #SBATCH -o /users/ntolley/data/ntolley/dendractor/intrinsic_permutations/job_out/intrinsic_permutations-%j.out

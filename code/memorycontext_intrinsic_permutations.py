@@ -36,15 +36,15 @@ import intrinsic_prior_configurations as prior_config
 save_path = '/users/ntolley/data/ntolley/dendractor/intrinsic_permutations'
 
 config_list = [
-    ('Esoma_Isoma', prior_config.update_prior_dict_Esoma_Isoma), # 1
-    ('Edend_Idend', prior_config.update_prior_dict_Edend_Idend), # 2
-    ('Esoma_Idend', prior_config.update_prior_dict_Esoma_Idend), # 3
-    ('Edend_Isoma', prior_config.update_prior_dict_Edend_Isoma), # 4
-    ('Esoma_Isomadend', prior_config.update_prior_dict_Esoma_Isomadend), # 5
-    ('Edend_Isomadend', prior_config.update_prior_dict_Edend_Isomadend), # 6
-    ('Esomadend_Isoma', prior_config.update_prior_dict_Esomadend_Isoma), # 7
-    ('Esomadend_Idend', prior_config.update_prior_dict_Esomadend_Idend), # 8
-    ('Esomadend_Isomadend', prior_config.update_prior_dict_Esomadend_Isomadend)] # 9
+    ('Esoma_Isoma', prior_config.update_prior_dict_Esoma_Isoma), # 0
+    ('Edend_Idend', prior_config.update_prior_dict_Edend_Idend), # 1
+    ('Esoma_Idend', prior_config.update_prior_dict_Esoma_Idend), # 2
+    ('Edend_Isoma', prior_config.update_prior_dict_Edend_Isoma), # 3
+    ('Esoma_Isomadend', prior_config.update_prior_dict_Esoma_Isomadend), # 4
+    ('Edend_Isomadend', prior_config.update_prior_dict_Edend_Isomadend), # 5
+    ('Esomadend_Isoma', prior_config.update_prior_dict_Esomadend_Isoma), # 6
+    ('Esomadend_Idend', prior_config.update_prior_dict_Esomadend_Idend), # 7
+    ('Esomadend_Isomadend', prior_config.update_prior_dict_Esomadend_Isomadend)] # 8
 
 
 def simulate_sweep(theta, params, cue_currents, context_currents):
@@ -145,7 +145,7 @@ if __name__ == "__main__":
     # prepare samples for parameter sweep
     params, _ = set_train_parameters(net, gid_ranges)
 
-    # num_simulations = 250
+    num_simulations = 250
     num_prior_fits = 5
     num_iter = 5000
 
