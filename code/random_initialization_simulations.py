@@ -8,7 +8,7 @@ import jaxley as jx
 
 import matplotlib.pyplot as plt
 import numpy as np
-from network_utils import make_network, set_train_parameters, gaussian_tuning, StimSynapse, get_currents, IonotropicSynapse
+from network_utils import make_network, set_train_parameters, gaussian_tuning, StimSynapse, get_currents, IonotropicSynapse, get_prior_dict
 from jax import config
 import pickle
 from networkx import connected_watts_strogatz_graph, adjacency_matrix,gaussian_random_partition_graph
@@ -19,22 +19,26 @@ import seaborn as sns
 from neurodsp.spectral import compute_spectrum
 from sklearn.linear_model import LinearRegression, Ridge
 from sklearn.decomposition import PCA
+import intrinsic_prior_configurations as prior_config
+
 
 config.update("jax_enable_x64", True)
 # config.update("jax_platform_name", "cpu")
 config.update("jax_platform_name", "gpu")
 
-from memorycontext_cuesoma_contextsoma import get_prior_dict
+save_path = '/users/ntolley/data/ntolley/dendractor/intrinsic_permutations_noise'
 
-from memorycontext_cuesoma_contextsoma import update_prior_dict_cuesoma_contextsoma
-from memorycontext_cuedend_contextdend import update_prior_dict_cuedend_contextdend
-from memorycontext_cuesoma_contextdend import update_prior_dict_cuesoma_contextdend
-from memorycontext_cuedend_contextsoma import update_prior_dict_cuedend_contextsoma
-
-from memorycontext_cuesoma_contextsoma_cellsoma import update_prior_dict_cuesoma_contextsoma_cellsoma
-from memorycontext_cuedend_contextdend_celldend import update_prior_dict_cuedend_contextdend_celldend
-from memorycontext_cuesoma_contextsoma_celldend import update_prior_dict_cuesoma_contextsoma_celldend
-
+config_list = [
+    ('Esoma_Isoma', prior_config.update_prior_dict_Esoma_Isoma), # 0
+    ('Edend_Idend', prior_config.update_prior_dict_Edend_Idend), # 1
+    ('Esoma_Idend', prior_config.update_prior_dict_Esoma_Idend), # 2
+    ('Edend_Isoma', prior_config.update_prior_dict_Edend_Isoma), # 3
+    ('Esoma_Isomadend', prior_config.update_prior_dict_Esoma_Isomadend), # 4
+    ('Edend_Isomadend', prior_config.update_prior_dict_Edend_Isomadend), # 5
+    ('Esomadend_Isoma', prior_config.update_prior_dict_Esomadend_Isoma), # 6
+    ('Esomadend_Idend', prior_config.update_prior_dict_Esomadend_Idend), # 7
+    ('Esomadend_Isomadend', prior_config.update_prior_dict_Esomadend_Isomadend) # 8
+    ]
 
 
 def simulate_sweep(theta, params, cue_currents, context_currents, random_init=False, seed=123):
@@ -86,8 +90,14 @@ def simulate_sweep(theta, params, cue_currents, context_currents, random_init=Fa
 
     net.delete_stimuli()
     
-    data_stimuli = net.cell(list(gid_ranges['cue'])).branch(0).comp(0).data_stimulate(cue_currents)
-    data_stimuli = net.cell(list(gid_ranges['context'])).branch(0).comp(0).data_stimulate(context_currents, data_stimuli=data_stimuli)
+    noise_scale = 0.06
+    cue_noise = np.random.normal(0, 1, size=cue_currents.shape) * noise_scale
+    context_noise = np.random.normal(0, 1, size=context_currents.shape) * noise_scale
+    
+    data_stimuli = net.cell(list(gid_ranges['cue'])).branch(0).comp(0).data_stimulate(cue_currents + cue_noise)
+    data_stimuli = net.cell(list(gid_ranges['context'])).branch(0).comp(0).data_stimulate(
+        context_currents + context_noise, data_stimuli=data_stimuli)
+
 
     net.delete_recordings()
     net.branch(0).comp(0).record('v')
@@ -133,34 +143,7 @@ def get_opt_data(data_path):
 
 
 if __name__ == "__main__":
-    num_E_cells = 100
-    num_I_cells = 50
-    num_context_cells = 50
-    num_cue_cells = 50
-
-    net_dict = {
-        'E': {'num_cells': num_E_cells},
-        'I': {'num_cells': num_I_cells},
-        'context': {'num_cells': num_context_cells},
-        'cue': {'num_cells': num_cue_cells},
-        'E_rate': {'num_cells': num_E_cells},
-        'I_rate': {'num_cells': num_I_cells},
-    }
-
-    gid_ranges = dict()
-    cell_count = 0
-    for name, cell_dict in net_dict.items():
-        num_cells = cell_dict['num_cells']
-        gid_ranges[name] = range(cell_count, cell_count + num_cells)
-        cell_count += num_cells
-
-    data_path_cuesoma_contextsoma = '/users/ntolley/data/ntolley/dendractor/memorycontext_cuesoma_contextsoma/'
-    data_path_cuedend_contextdend = '/users/ntolley/data/ntolley/dendractor/memorycontext_cuedend_contextdend/'
-    data_path_cuesoma_contextdend = '/users/ntolley/data/ntolley/dendractor/memorycontext_cuesoma_contextdend/'
-    data_path_cuedend_contextsoma = '/users/ntolley/data/ntolley/dendractor/memorycontext_cuedend_contextsoma/'
-    data_path_cuesoma_contextsoma_cellsoma = '/users/ntolley/data/ntolley/dendractor/memorycontext_cuesoma_contextsoma_cellsoma/'
-    data_path_cuedend_contextdend_celldend = '/users/ntolley/data/ntolley/dendractor/memorycontext_cuedend_contextdend_celldend/'
-    data_path_cuesoma_contextsoma_celldend = '/users/ntolley/data/ntolley/dendractor/memorycontext_cuesoma_contextsoma_celldend/'
+    flow_idx = 4 # flow used for random init simulations
 
     dt = 0.025
     t_max = 2000
@@ -177,27 +160,15 @@ if __name__ == "__main__":
     time_points = t_max // dt + 2
     checkpoints = [int(np.ceil(time_points**(1/levels))) for _ in range(levels)]
 
-    res_paths = {
-        # 'cuesoma_contextsoma': {'data_path': data_path_cuesoma_contextsoma, 'update_prior': update_prior_dict_cuesoma_contextsoma, 'flow_idx': 4},
-        # 'cuedend_contextdend': {'data_path': data_path_cuedend_contextdend, 'update_prior': update_prior_dict_cuedend_contextdend, 'flow_idx': 4},
-        # 'cuesoma_contextdend': {'data_path': data_path_cuesoma_contextdend, 'update_prior': update_prior_dict_cuesoma_contextdend, 'flow_idx': 4},
-        # 'cuedend_contextsoma': {'data_path': data_path_cuedend_contextsoma, 'update_prior': update_prior_dict_cuedend_contextsoma, 'flow_idx': 4},
-        'cuesoma_contextsoma_cellsoma': {'data_path': data_path_cuesoma_contextsoma_cellsoma, 'update_prior': update_prior_dict_cuesoma_contextsoma_cellsoma, 'flow_idx': 4},
-        # 'cuedend_contextdend_celldend': {'data_path': data_path_cuedend_contextdend_celldend, 'update_prior': update_prior_dict_cuedend_contextdend_celldend, 'flow_idx': 4},
-        # 'cuesoma_contextsoma_celldend': {'data_path': data_path_cuesoma_contextsoma_celldend, 'update_prior': update_prior_dict_cuesoma_contextsoma_celldend, 'flow_idx': 3},
-    }
+    for config_name, update_prior_dict in config_list:
+        data_path = f'{save_path}/{config_name}'
 
-    for name, path_dict in res_paths.items():
-        data_path = path_dict['data_path']
-        update_prior_dict = path_dict['update_prior']
-        
+        with open(f'{data_path}/jaxley_net.pkl', 'rb') as f:
+            net, gid_ranges = pickle.load(f)
+
         res_dict = get_opt_data(data_path)
-        flow_idx = path_dict['flow_idx']
         theta = res_dict['theta_list'][flow_idx]
         theta_idx = np.argmin(res_dict['error_list'][flow_idx])
-
-        with open(f'{data_path}jaxley_net.pkl', 'rb') as f:
-            net, gid_ranges = pickle.load(f)
 
         num_E_cells, num_I_cells = len(gid_ranges['E']), len(gid_ranges['I'])
         num_cue_cells = len(gid_ranges['cue'])
@@ -237,7 +208,7 @@ if __name__ == "__main__":
         output_array = np.concatenate(output_list)
 
         random_init_dict = {
-            'name': name,
+            'name': config_name,
             'output_array': output_array,
             'targets': targets,
             'targets_concat': targets_concat,
@@ -246,8 +217,8 @@ if __name__ == "__main__":
             'gid_ranges': gid_ranges
         }
 
-        random_init_save_path = '/users/ntolley/data/ntolley/dendractor/random_initialization_memorycontext'
-        fname = f'{name}_random_init.pkl'
+        random_init_save_path = '/users/ntolley/data/ntolley/dendractor/intrinsic_permutations/random_initialization'
+        fname = f'{config_name}_random_init.pkl'
         with open(f'{random_init_save_path}/{fname}', 'wb') as f:
             pickle.dump(random_init_dict,f)
 

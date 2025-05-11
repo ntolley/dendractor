@@ -62,7 +62,7 @@ def update_prior_dict_Esoma_Idend(prior_dict):
 
     # Isoma
     prior_dict['IE_gaba_gS']['bounds'] = g_off
-    prior_dict['IE_gaba_pconn']['bounds'] =  p_of
+    prior_dict['IE_gaba_pconn']['bounds'] =  p_off
 
     # Edend
     prior_dict['EE_dend_ampa_gS']['bounds'] = g_off

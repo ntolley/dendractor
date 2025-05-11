@@ -33,18 +33,23 @@ from sklearn.linear_model import LinearRegression, Ridge
 from neurodsp.spectral import compute_spectrum
 import intrinsic_prior_configurations as prior_config
 
-save_path = '/users/ntolley/data/ntolley/dendractor/intrinsic_permutations'
+def get_save_path():
+    save_path = '/users/ntolley/data/ntolley/dendractor/intrinsic_permutations'
+    return save_path
 
-config_list = [
-    ('Esoma_Isoma', prior_config.update_prior_dict_Esoma_Isoma), # 0
-    ('Edend_Idend', prior_config.update_prior_dict_Edend_Idend), # 1
-    ('Esoma_Idend', prior_config.update_prior_dict_Esoma_Idend), # 2
-    ('Edend_Isoma', prior_config.update_prior_dict_Edend_Isoma), # 3
-    ('Esoma_Isomadend', prior_config.update_prior_dict_Esoma_Isomadend), # 4
-    ('Edend_Isomadend', prior_config.update_prior_dict_Edend_Isomadend), # 5
-    ('Esomadend_Isoma', prior_config.update_prior_dict_Esomadend_Isoma), # 6
-    ('Esomadend_Idend', prior_config.update_prior_dict_Esomadend_Idend), # 7
-    ('Esomadend_Isomadend', prior_config.update_prior_dict_Esomadend_Isomadend)] # 8
+def get_config_list():
+    config_list = [
+        ('Esoma_Isoma', prior_config.update_prior_dict_Esoma_Isoma), # 0
+        ('Edend_Idend', prior_config.update_prior_dict_Edend_Idend), # 1
+        ('Esoma_Idend', prior_config.update_prior_dict_Esoma_Idend), # 2
+        ('Edend_Isoma', prior_config.update_prior_dict_Edend_Isoma), # 3
+        ('Esoma_Isomadend', prior_config.update_prior_dict_Esoma_Isomadend), # 4
+        ('Edend_Isomadend', prior_config.update_prior_dict_Edend_Isomadend), # 5
+        ('Esomadend_Isoma', prior_config.update_prior_dict_Esomadend_Isoma), # 6
+        ('Esomadend_Idend', prior_config.update_prior_dict_Esomadend_Idend), # 7
+        ('Esomadend_Isomadend', prior_config.update_prior_dict_Esomadend_Isomadend) # 8
+        ]
+    return config_list
 
 
 def simulate_sweep(theta, params, cue_currents, context_currents):
@@ -96,15 +101,30 @@ def simulate_sweep(theta, params, cue_currents, context_currents):
 
     net.delete_stimuli()
     
-    data_stimuli = net.cell(list(gid_ranges['cue'])).branch(0).comp(0).data_stimulate(cue_currents)
-    data_stimuli = net.cell(list(gid_ranges['context'])).branch(0).comp(0).data_stimulate(context_currents, data_stimuli=data_stimuli)
+    noise_scale = 0.06
+    cue_noise = np.random.normal(0, 1, size=cue_currents.shape) * noise_scale
+    context_noise = np.random.normal(0, 1, size=context_currents.shape) * noise_scale
+    
+    data_stimuli = net.cell(list(gid_ranges['cue'])).branch(0).comp(0).data_stimulate(cue_currents + cue_noise)
+    data_stimuli = net.cell(list(gid_ranges['context'])).branch(0).comp(0).data_stimulate(
+        context_currents + context_noise, data_stimuli=data_stimuli)
 
     net.delete_recordings()
     net.branch(0).comp(0).record('v')
+
+    vmin, vmax = -80, -40
+    E_voltages = np.random.uniform(vmin, vmax, size=len(net.cell(list(gid_ranges['E'])).nodes))
+    I_voltages = np.random.uniform(vmin, vmax, size=len(net.cell(list(gid_ranges['I'])).nodes))
+    net.cell(list(gid_ranges['E'])).set('v', E_voltages)
+    net.cell(list(gid_ranges['I'])).set('v', I_voltages)
+
     s = jx.integrate(net, t_max=t_max, params=params, checkpoint_lengths=checkpoints, data_stimuli=data_stimuli)
     return s
 
 if __name__ == "__main__":
+    save_path = get_save_path()
+    config_list = get_config_list()
+
     # Pull config name and prior dict update function
     job_id = int(sys.argv[1])
     config_name, update_prior_dict = config_list[job_id]
@@ -150,6 +170,9 @@ if __name__ == "__main__":
     num_iter = 5000
 
     input_list = jnp.array([[-2,-2,1], [2,2,1], [-2, 2,1], [2,-2,1],
+                            [-2,-2,-1], [2,2,-1], [-2, 2,-1], [2,-2,-1],
+                            # Same set of stimuli repeated
+                            [-2,-2,1], [2,2,1], [-2, 2,1], [2,-2,1],
                             [-2,-2,-1], [2,2,-1], [-2, 2,-1], [2,-2,-1]])
     num_cond = input_list.shape[0]
     input_data = [get_currents(input_list[idx], gid_ranges, t_max, dt) for idx in range(num_cond)]
@@ -158,7 +181,7 @@ if __name__ == "__main__":
     # targets = np.concatenate([input_data[idx][2][:, ::downsample_factor] for idx in range(num_cond)], axis=1).T
     targets = np.concatenate([input_data[idx][2][:2, ::downsample_factor] for idx in range(num_cond)], axis=1).T
 
-    batch_size = 2
+    batch_size = 1
     cue_currents_batch = jnp.tile(cue_currents, (batch_size, 1, 1))
     context_currents_batch = jnp.tile(context_currents, (batch_size, 1, 1))
     print(cue_currents_batch.shape)

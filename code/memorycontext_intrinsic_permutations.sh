@@ -2,7 +2,7 @@
 #SBATCH -J intrinsic_permutations
 #SBATCH -N 1
 #SBATCH -n 16
-#SBATCH -t 20:00:00
+#SBATCH -t 50:00:00
 #SBATCH --mem=200G
 #SBATCH --account carney-sjones-condo
 #SBATCH -p gpu --gres=gpu:1
