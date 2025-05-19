@@ -3,7 +3,7 @@
 #SBATCH -N 1
 #SBATCH -n 16
 #SBATCH -t 50:00:00
-#SBATCH --mem=200G
+#SBATCH --mem=300G
 #SBATCH --account carney-sjones-condo
 #SBATCH -p gpu --gres=gpu:1
 #SBATCH --array=0-8

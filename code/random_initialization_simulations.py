@@ -26,7 +26,7 @@ config.update("jax_enable_x64", True)
 # config.update("jax_platform_name", "cpu")
 config.update("jax_platform_name", "gpu")
 
-save_path = '/users/ntolley/data/ntolley/dendractor/intrinsic_permutations_noise'
+save_path = '/users/ntolley/data/ntolley/dendractor/intrinsic_permutations'
 
 config_list = [
     ('Esoma_Isoma', prior_config.update_prior_dict_Esoma_Isoma), # 0
@@ -35,13 +35,16 @@ config_list = [
     ('Edend_Isoma', prior_config.update_prior_dict_Edend_Isoma), # 3
     ('Esoma_Isomadend', prior_config.update_prior_dict_Esoma_Isomadend), # 4
     ('Edend_Isomadend', prior_config.update_prior_dict_Edend_Isomadend), # 5
-    ('Esomadend_Isoma', prior_config.update_prior_dict_Esomadend_Isoma), # 6
-    ('Esomadend_Idend', prior_config.update_prior_dict_Esomadend_Idend), # 7
-    ('Esomadend_Isomadend', prior_config.update_prior_dict_Esomadend_Isomadend) # 8
+    # ('Esomadend_Isoma', prior_config.update_prior_dict_Esomadend_Isoma), # 6
+    # ('Esomadend_Idend', prior_config.update_prior_dict_Esomadend_Idend), # 7
+    # ('Esomadend_Isomadend', prior_config.update_prior_dict_Esomadend_Isomadend) # 8
     ]
 
 
-def simulate_sweep(theta, params, cue_currents, context_currents, random_init=False, seed=123):
+def simulate_sweep(theta, params, cue_currents, context_currents, seed):
+    seed_key = jax.random.split(jax.random.PRNGKey(seed), num=2)
+    
+
     key_order = ["cue_ampa_gS", "context_ampa_gS",
                  "IE_gaba_gS", "II_gaba_gS", "EI_ampa_gS", "EE_ampa_gS",
                  "cue_dend_ampa_gS", "context_dend_ampa_gS",
@@ -91,23 +94,22 @@ def simulate_sweep(theta, params, cue_currents, context_currents, random_init=Fa
     net.delete_stimuli()
     
     noise_scale = 0.06
-    cue_noise = np.random.normal(0, 1, size=cue_currents.shape) * noise_scale
-    context_noise = np.random.normal(0, 1, size=context_currents.shape) * noise_scale
+    cue_noise = jax.random.normal(key=seed_key[0], shape=cue_currents.shape) * noise_scale
+    context_noise = jax.random.normal(key=seed_key[1], shape=context_currents.shape) * noise_scale
     
     data_stimuli = net.cell(list(gid_ranges['cue'])).branch(0).comp(0).data_stimulate(cue_currents + cue_noise)
     data_stimuli = net.cell(list(gid_ranges['context'])).branch(0).comp(0).data_stimulate(
         context_currents + context_noise, data_stimuli=data_stimuli)
 
-
     net.delete_recordings()
     net.branch(0).comp(0).record('v')
 
-    # Voltage range for random initialization
-    vmin, vmax = -80, -40
-    E_voltages = np.random.uniform(vmin, vmax, size=len(net.cell(list(gid_ranges['E'])).nodes))
-    I_voltages = np.random.uniform(vmin, vmax, size=len(net.cell(list(gid_ranges['I'])).nodes))
-    net.cell(list(gid_ranges['E'])).set('v', E_voltages)
-    net.cell(list(gid_ranges['I'])).set('v', I_voltages)
+    # vmin, vmax = -80, -40
+    # E_voltages = jax.random.uniform(key=seed_key, minval=vmin, maxval=vmax, shape=(len(net.cell(list(gid_ranges['E'])).nodes),))
+    # I_voltages = jax.random.uniform(key=seed_key, minval=vmin, maxval=vmax, shape=(len(net.cell(list(gid_ranges['I'])).nodes),))
+    # net.cell(list(gid_ranges['E'])).set('v', E_voltages)
+    # net.cell(list(gid_ranges['I'])).set('v', I_voltages)
+
     s = jx.integrate(net, t_max=t_max, params=params, checkpoint_lengths=checkpoints, data_stimuli=data_stimuli)
     return s
 
@@ -115,14 +117,12 @@ def get_opt_data(data_path):
     print(f'Loading data from: {data_path}')
     theta_list = list()
     error_list = list()
-    band_power_list = list()
 
     num_flows = 5
     for flow_idx in range(num_flows):
         print(f'Flow {flow_idx}')
         theta = np.load(f'{data_path}/theta_{flow_idx}.npy')
         error = np.load(f'{data_path}/flow_error_{flow_idx}.npy')
-        band_power_avg = np.load(f'{data_path}/flow_band_power_{flow_idx}.npy')
 
 
         rate_gids = list(gid_ranges['E_rate']) + list(gid_ranges['I_rate'])
@@ -130,12 +130,11 @@ def get_opt_data(data_path):
 
         theta_list.append(theta)
         error_list.append(error)
-        band_power_list.append(band_power_avg)
 
 
     error_sort = np.argsort(error)
 
-    res_dict = {'theta_list': theta_list, 'error_list': error_list, 'band_power_list': band_power_list, 'error_sort': error_sort, 
+    res_dict = {'theta_list': theta_list, 'error_list': error_list, 'error_sort': error_sort, 
                 }
 
     return res_dict
@@ -192,7 +191,7 @@ if __name__ == "__main__":
         print(cue_currents_batch.shape)
 
         jitted_simulate = jit(simulate_sweep)
-        jitted_vmapped_simulate = vmap(jitted_simulate, in_axes=(0, None, 0, 0))
+        jitted_vmapped_simulate = vmap(jitted_simulate, in_axes=(0, None, 0, 0, 0))
 
         # Run simulations in batch
         num_random_init = 20
@@ -202,7 +201,8 @@ if __name__ == "__main__":
             theta_batch = theta[theta_idx:theta_idx+1, :]
             theta_batch = jnp.repeat(theta_batch, num_cond, axis=0)
 
-            output = np.array(jitted_vmapped_simulate(theta_batch, params, cue_currents_batch, context_currents_batch))
+            seed_batch = jnp.arange(start_idx*num_cond, (start_idx+1)*num_cond)
+            output = np.array(jitted_vmapped_simulate(theta_batch, params, cue_currents_batch, context_currents_batch, seed_batch))
             output = output[:, :, ::downsample_factor]
             output_list.append(output)
         output_array = np.concatenate(output_list)
