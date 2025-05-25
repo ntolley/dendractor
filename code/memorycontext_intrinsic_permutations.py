@@ -54,7 +54,7 @@ def get_config_list():
 
 def simulate_sweep(theta, params, cue_currents, context_currents, seed):
     seed_key = jax.random.split(jax.random.PRNGKey(seed), num=2)
-    
+    rng = np.random.default_rng(seed=123)
 
     key_order = ["cue_ampa_gS", "context_ampa_gS",
                  "IE_gaba_gS", "II_gaba_gS", "EI_ampa_gS", "EE_ampa_gS",
@@ -85,7 +85,7 @@ def simulate_sweep(theta, params, cue_currents, context_currents, seed):
         num_vals = len(params[key_idx][conn_g_name])
 
         new_vals = np.repeat(theta_dict[conn_g_name], num_vals)
-        mask = np.random.uniform(0, 1, size=num_vals) < theta_dict[conn_prob_name]
+        mask = rng.uniform(0, 1, size=num_vals) < theta_dict[conn_prob_name]
         new_vals = new_vals * mask
 
         params[key_idx][conn_g_name] = new_vals
@@ -105,23 +105,26 @@ def simulate_sweep(theta, params, cue_currents, context_currents, seed):
     net.delete_stimuli()
     
     noise_scale = 0.06
-    cue_noise = jax.random.normal(key=seed_key[0], shape=cue_currents.shape) * noise_scale
-    context_noise = jax.random.normal(key=seed_key[1], shape=context_currents.shape) * noise_scale
+    # cue_noise = jax.random.normal(key=seed_key[0], shape=cue_currents.shape) * noise_scale
+    # context_noise = jax.random.normal(key=seed_key[1], shape=context_currents.shape) * noise_scale
     
-    data_stimuli = net.cell(list(gid_ranges['cue'])).branch(0).comp(0).data_stimulate(cue_currents + cue_noise)
+    data_stimuli = net.cell(list(gid_ranges['cue'])).branch(0).comp(0).data_stimulate(cue_currents)
     data_stimuli = net.cell(list(gid_ranges['context'])).branch(0).comp(0).data_stimulate(
-        context_currents + context_noise, data_stimuli=data_stimuli)
+        context_currents, data_stimuli=data_stimuli)
+
+    vmin, vmax = -80, -40
+    E_voltages = jax.random.uniform(key=seed_key[0], minval=vmin, maxval=vmax, shape=(len(net.cell(list(gid_ranges['E'])).nodes),))
+    I_voltages = jax.random.uniform(key=seed_key[1], minval=vmin, maxval=vmax, shape=(len(net.cell(list(gid_ranges['I'])).nodes),))
+
+    param_state = None
+    param_state = net.cell(list(gid_ranges['E'])).data_set('v', E_voltages, param_state)
+    param_state = net.cell(list(gid_ranges['I'])).data_set('v', I_voltages, param_state)
+
 
     net.delete_recordings()
-    net.branch(0).comp(0).record('v')
+    net.cell(list(gid_ranges['E_rate'])).branch(0).comp(0).record('v')
 
-    # vmin, vmax = -80, -40
-    # E_voltages = jax.random.uniform(key=seed_key, minval=vmin, maxval=vmax, shape=(len(net.cell(list(gid_ranges['E'])).nodes),))
-    # I_voltages = jax.random.uniform(key=seed_key, minval=vmin, maxval=vmax, shape=(len(net.cell(list(gid_ranges['I'])).nodes),))
-    # net.cell(list(gid_ranges['E'])).set('v', E_voltages)
-    # net.cell(list(gid_ranges['I'])).set('v', I_voltages)
-
-    s = jx.integrate(net, t_max=t_max, params=params, checkpoint_lengths=checkpoints, data_stimuli=data_stimuli)
+    s = jx.integrate(net, t_max=t_max, params=params, data_stimuli=data_stimuli, param_state=param_state, delta_t=dt)
     return s
 
 if __name__ == "__main__":
@@ -137,23 +140,23 @@ if __name__ == "__main__":
     data_path = f'{save_path}/{config_name}'
     os.makedirs(f'{data_path}/tmp', exist_ok=True)
 
-    dt = 0.025
+    dt = 0.05
     t_max = 2000
     time_vec = jnp.arange(0, t_max, dt)
 
     downsample_factor = 10
-    dt_flow = dt * downsample_factor
-    fs_flow = (1/dt_flow) * 1e3
-    time_vec_flow = np.arange(0, t_max, dt_flow)
-    burn_in = int(8000 / downsample_factor)
+    # dt_flow = dt * downsample_factor
+    # fs_flow = (1/dt_flow) * 1e3
+    # time_vec_flow = np.arange(0, t_max, dt_flow)
+    # burn_in = int(8000 / downsample_factor)
 
     prior_dict = get_prior_dict()
     update_prior_dict(prior_dict)
 
     # Used to reduce GPU memory (passed to simulate function)
-    levels = 2
-    time_points = t_max // dt + 2
-    checkpoints = [int(np.ceil(time_points**(1/levels))) for _ in range(levels)]
+    # levels = 2
+    # time_points = t_max // dt + 2
+    # checkpoints = [int(np.ceil(time_points**(1/levels))) for _ in range(levels)]
 
     net, gid_ranges = make_network()
     with open(f'{data_path}/jaxley_net.pkl', 'wb') as f:
@@ -168,25 +171,29 @@ if __name__ == "__main__":
     # prepare samples for parameter sweep
     params, _ = set_train_parameters(net, gid_ranges)
 
-    num_simulations = 250
-    # num_simulations = 100
+    # num_simulations = 250
+    num_simulations = 100
     num_prior_fits = 5
     num_iter = 5000
 
-    input_list = jnp.array([[-2,-2,1], [2,2,1], [-2, 2,1], [2,-2,1],
-                            [-2,-2,-1], [2,2,-1], [-2, 2,-1], [2,-2,-1],
-                            # Same set of stimuli repeated
-                            [-2,-2,1], [2,2,1], [-2, 2,1], [2,-2,1],
-                            [-2,-2,-1], [2,2,-1], [-2, 2,-1], [2,-2,-1]])
+    num_repeats = 5
+    # input_list = jnp.array([[-2,-2,1], [2,2,1], [-2, 2,1], [2,-2,1],
+    #                         [-2,-2,-1], [2,2,-1], [-2, 2,-1], [2,-2,-1]])
+    input_list = jnp.array([[-2,-2,1], [2,2,1],
+                            [-2,-2,-1], [2,2,-1]])
+    input_list = jnp.tile(input_list, (num_repeats, 1))
+
     num_cond = input_list.shape[0]
-    num_train = num_cond // 2
 
     input_data = [get_currents(input_list[idx], gid_ranges, t_max, dt) for idx in range(num_cond)]
     cue_currents = jnp.stack([input_data[idx][0] for idx in range(num_cond)])
     context_currents = jnp.stack([input_data[idx][1] for idx in range(num_cond)])
 
-    targets_train1 = np.concatenate([input_data[idx][2][:2, ::downsample_factor] for idx in range(num_train)], axis=1).T
-    targets_train2 = np.concatenate([input_data[idx][2][:2, ::downsample_factor] for idx in range(num_train, num_cond)], axis=1).T
+    # num_train = num_cond // 2
+    # targets_train1 = np.concatenate([input_data[idx][2][:2, ::downsample_factor] for idx in range(num_train)], axis=1).T
+    # targets_train2 = np.concatenate([input_data[idx][2][:2, ::downsample_factor] for idx in range(num_train, num_cond)], axis=1).T
+
+    targets_train = np.concatenate([input_data[idx][2][:2, ::downsample_factor] for idx in range(num_cond)], axis=1).T
 
     batch_size = 1
     cue_currents_batch = jnp.tile(cue_currents, (batch_size, 1, 1))
@@ -209,7 +216,6 @@ if __name__ == "__main__":
         error_list = list()
         model = Ridge(alpha=2.0)
         for start_idx in range(0, num_simulations, batch_size):
-            print(f'Batch: {start_idx}')
             end_idx = np.min([start_idx + batch_size, num_simulations])
             theta_batch = theta[start_idx:end_idx, :]
             theta_batch = jnp.repeat(theta_batch, num_cond, axis=0)
@@ -218,24 +224,34 @@ if __name__ == "__main__":
             output = np.array(jitted_vmapped_simulate(theta_batch, params, cue_currents_batch, context_currents_batch, seed_batch))
             output = output[:, :, ::downsample_factor]
 
-            x_train1 = list()
-            for cond_idx in range(num_train):
-                x_train1.append(output[cond_idx, gid_ranges['E_rate'], :])
-            x_train1 = np.concatenate(x_train1, axis=1).T
+            x_train = list()
+            for cond_idx in range(num_cond):
+                x_train.append(output[cond_idx, :, :])
+            x_train = np.concatenate(x_train, axis=1).T
 
-            x_train2 = list()
-            for cond_idx in range(num_train, num_cond):
-                x_train2.append(output[cond_idx, gid_ranges['E_rate'], :])
-            x_train2 = np.concatenate(x_train2, axis=1).T
+            y_pred = model.fit(x_train, targets_train).predict(x_train)
+            error = np.mean(np.square(targets_train - y_pred))
 
-            y_pred2 = model.fit(x_train1[burn_in:, :], targets_train1[burn_in:, :]).predict(x_train2[burn_in:, :])
-            error2 = np.mean(np.square(targets_train2[burn_in:, :] - y_pred2))
+            error_list.append(error)
+            print(f'Batch {start_idx}; error: {error}')
 
-            y_pred1 = model.fit(x_train2[burn_in:, :], targets_train2[burn_in:, :]).predict(x_train1[burn_in:, :])
-            error1 = np.mean(np.square(targets_train1[burn_in:, :] - y_pred1))
+            # x_train1 = list()
+            # for cond_idx in range(num_train):
+            #     x_train1.append(output[cond_idx, :, :])
+            # x_train1 = np.concatenate(x_train1, axis=1).T
 
+            # x_train2 = list()
+            # for cond_idx in range(num_train, num_cond):
+            #     x_train2.append(output[cond_idx, :, :])
+            # x_train2 = np.concatenate(x_train2, axis=1).T
 
-            error_list.append(np.mean([error1, error2]))
+            # y_pred2 = model.fit(x_train1[burn_in:, :], targets_train1[burn_in:, :]).predict(x_train2[burn_in:, :])
+            # error2 = np.mean(np.square(targets_train2[burn_in:, :] - y_pred2))
+
+            # y_pred1 = model.fit(x_train2[burn_in:, :], targets_train2[burn_in:, :]).predict(x_train1[burn_in:, :])
+            # error1 = np.mean(np.square(targets_train1[burn_in:, :] - y_pred1))
+
+            # error_list.append(np.mean([error1, error2]))
 
         # Train flow for new prior
         error_list = np.array(error_list)

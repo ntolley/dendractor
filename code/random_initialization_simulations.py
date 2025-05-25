@@ -104,13 +104,7 @@ def simulate_sweep(theta, params, cue_currents, context_currents, seed):
     net.delete_recordings()
     net.branch(0).comp(0).record('v')
 
-    # vmin, vmax = -80, -40
-    # E_voltages = jax.random.uniform(key=seed_key, minval=vmin, maxval=vmax, shape=(len(net.cell(list(gid_ranges['E'])).nodes),))
-    # I_voltages = jax.random.uniform(key=seed_key, minval=vmin, maxval=vmax, shape=(len(net.cell(list(gid_ranges['I'])).nodes),))
-    # net.cell(list(gid_ranges['E'])).set('v', E_voltages)
-    # net.cell(list(gid_ranges['I'])).set('v', I_voltages)
-
-    s = jx.integrate(net, t_max=t_max, params=params, checkpoint_lengths=checkpoints, data_stimuli=data_stimuli)
+    s = jx.integrate(net, t_max=t_max, params=params, data_stimuli=data_stimuli, delta_t=dt)
     return s
 
 def get_opt_data(data_path):
@@ -142,9 +136,9 @@ def get_opt_data(data_path):
 
 
 if __name__ == "__main__":
-    flow_idx = 4 # flow used for random init simulations
+    flow_idx = 1 # flow used for random init simulations
 
-    dt = 0.025
+    dt = 0.05
     t_max = 2000
     time_vec = jnp.arange(0, t_max, dt)
 
@@ -155,9 +149,9 @@ if __name__ == "__main__":
     burn_in = int(8000 / downsample_factor)
 
     # Used to reduce GPU memory (passed to simulate function)
-    levels = 2
-    time_points = t_max // dt + 2
-    checkpoints = [int(np.ceil(time_points**(1/levels))) for _ in range(levels)]
+    # levels = 2
+    # time_points = t_max // dt + 2
+    # checkpoints = [int(np.ceil(time_points**(1/levels))) for _ in range(levels)]
 
     for config_name, update_prior_dict in config_list:
         data_path = f'{save_path}/{config_name}'
