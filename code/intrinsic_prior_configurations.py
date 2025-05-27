@@ -7,8 +7,8 @@ p_off = (0, 0)
 def set_prior_cuesoma_contextsoma(prior_dict):
     prior_dict['cue_ampa_gS']['bounds'] = (-3, -3)
     prior_dict['context_ampa_gS']['bounds'] = (-3, -3)
-    prior_dict['cue_ampa_pconn']['bounds'] = (1, 1)
-    prior_dict['context_ampa_pconn']['bounds'] = (1, 1)
+    prior_dict['cue_ampa_pconn']['bounds'] = (0, 1)
+    prior_dict['context_ampa_pconn']['bounds'] = (0, 1)
 
     prior_dict['cue_dend_ampa_gS']['bounds'] = g_off
     prior_dict['context_dend_ampa_gS']['bounds'] = g_off

@@ -15,7 +15,7 @@
 module load anaconda
 module load cudnn
 source ~/.bashrc
-conda activate jaxley
+conda activate jaxley2
 
 echo "Starting job $SLURM_ARRAY_TASK_ID on $HOSTNAME"
 python memorycontext_intrinsic_permutations.py $SLURM_ARRAY_TASK_ID

@@ -22,7 +22,7 @@ from sklearn.decomposition import PCA
 import intrinsic_prior_configurations as prior_config
 
 
-config.update("jax_enable_x64", True)
+config.update("jax_enable_x64", False)
 # config.update("jax_platform_name", "cpu")
 config.update("jax_platform_name", "gpu")
 
@@ -43,7 +43,7 @@ config_list = [
 
 def simulate_sweep(theta, params, cue_currents, context_currents, seed):
     seed_key = jax.random.split(jax.random.PRNGKey(seed), num=2)
-    
+    rng = np.random.default_rng(seed=123)
 
     key_order = ["cue_ampa_gS", "context_ampa_gS",
                  "IE_gaba_gS", "II_gaba_gS", "EI_ampa_gS", "EE_ampa_gS",
@@ -74,7 +74,7 @@ def simulate_sweep(theta, params, cue_currents, context_currents, seed):
         num_vals = len(params[key_idx][conn_g_name])
 
         new_vals = np.repeat(theta_dict[conn_g_name], num_vals)
-        mask = np.random.uniform(0, 1, size=num_vals) < theta_dict[conn_prob_name]
+        mask = rng.uniform(0, 1, size=num_vals) < theta_dict[conn_prob_name]
         new_vals = new_vals * mask
 
         params[key_idx][conn_g_name] = new_vals
@@ -94,17 +94,26 @@ def simulate_sweep(theta, params, cue_currents, context_currents, seed):
     net.delete_stimuli()
     
     noise_scale = 0.06
-    cue_noise = jax.random.normal(key=seed_key[0], shape=cue_currents.shape) * noise_scale
-    context_noise = jax.random.normal(key=seed_key[1], shape=context_currents.shape) * noise_scale
+    # cue_noise = jax.random.normal(key=seed_key[0], shape=cue_currents.shape) * noise_scale
+    # context_noise = jax.random.normal(key=seed_key[1], shape=context_currents.shape) * noise_scale
     
-    data_stimuli = net.cell(list(gid_ranges['cue'])).branch(0).comp(0).data_stimulate(cue_currents + cue_noise)
+    data_stimuli = net.cell(list(gid_ranges['cue'])).branch(0).comp(0).data_stimulate(cue_currents)
     data_stimuli = net.cell(list(gid_ranges['context'])).branch(0).comp(0).data_stimulate(
-        context_currents + context_noise, data_stimuli=data_stimuli)
+        context_currents, data_stimuli=data_stimuli)
+
+    vmin, vmax = -80, -40
+    E_voltages = jax.random.uniform(key=seed_key[0], minval=vmin, maxval=vmax, shape=(len(net.cell(list(gid_ranges['E'])).nodes),))
+    I_voltages = jax.random.uniform(key=seed_key[1], minval=vmin, maxval=vmax, shape=(len(net.cell(list(gid_ranges['I'])).nodes),))
+
+    param_state = None
+    param_state = net.cell(list(gid_ranges['E'])).data_set('v', E_voltages, param_state)
+    param_state = net.cell(list(gid_ranges['I'])).data_set('v', I_voltages, param_state)
+
 
     net.delete_recordings()
     net.branch(0).comp(0).record('v')
 
-    s = jx.integrate(net, t_max=t_max, params=params, data_stimuli=data_stimuli, delta_t=dt)
+    s = jx.integrate(net, t_max=t_max, params=params, data_stimuli=data_stimuli, param_state=param_state, delta_t=dt)
     return s
 
 def get_opt_data(data_path):
@@ -136,7 +145,7 @@ def get_opt_data(data_path):
 
 
 if __name__ == "__main__":
-    flow_idx = 1 # flow used for random init simulations
+    flow_idx = 0 # flow used for random init simulations
 
     dt = 0.05
     t_max = 2000
@@ -170,8 +179,10 @@ if __name__ == "__main__":
         prior_dict = get_prior_dict()
         update_prior_dict(prior_dict)
 
-        input_list = jnp.array([[-2,-2,1], [2,2,1], [-2, 2,1], [2,-2,1],
-                                [-2,-2,-1], [2,2,-1], [-2, 2,-1], [2,-2,-1]])
+        # input_list = jnp.array([[-2,-2,1], [2,2,1], [-2, 2,1], [2,-2,1],
+        #                         [-2,-2,-1], [2,2,-1], [-2, 2,-1], [2,-2,-1]])
+        input_list = jnp.array([[-2,-2,1], [2,2,1],
+                                [-2,-2,-1], [2,2,-1]])
         num_cond = input_list.shape[0]
         input_data = [get_currents(input_list[idx], gid_ranges, t_max, dt) for idx in range(num_cond)]
         cue_currents = jnp.stack([input_data[idx][0] for idx in range(num_cond)])
@@ -188,7 +199,7 @@ if __name__ == "__main__":
         jitted_vmapped_simulate = vmap(jitted_simulate, in_axes=(0, None, 0, 0, 0))
 
         # Run simulations in batch
-        num_random_init = 20
+        num_random_init = 5
         output_list = list()
         for start_idx in range(num_random_init):
             print(f'Batch: {start_idx}')

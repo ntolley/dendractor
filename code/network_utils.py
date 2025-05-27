@@ -1,9 +1,9 @@
 import sys
 import jax
-from jax import config
-config.update("jax_enable_x64", True)
+# from jax import config
+jax.config.update("jax_enable_x64", True)
 # config.update("jax_platform_name", "cpu")
-config.update("jax_platform_name", "gpu")
+jax.config.update("jax_platform_name", "gpu")
 
 
 import matplotlib.pyplot as plt
@@ -365,21 +365,21 @@ def set_train_parameters(net, gid_ranges):
     net.select(edges="all").make_trainable('context_ampa_gS')
     net.select(edges="all").make_trainable('context_dend_ampa_gS')
 
-    net.select(edges="all").make_trainable("E_Leak_gLeak")
-    net.select(edges="all").make_trainable("E_dend_Leak_gLeak")
-    net.select(edges="all").make_trainable("I_Leak_gLeak")
+    net.make_trainable("E_Leak_gLeak")
+    net.make_trainable("E_dend_Leak_gLeak")
+    net.make_trainable("I_Leak_gLeak")
 
-    net.select(edges="all").make_trainable("E_Km_gKm")
-    net.select(edges="all").make_trainable("E_CaL_gCaL")
-    net.select(edges="all").make_trainable("E_CaT_gCaT")
+    net.make_trainable("E_Km_gKm")
+    net.make_trainable("E_CaL_gCaL")
+    net.make_trainable("E_CaT_gCaT")
 
-    net.select(edges="all").make_trainable("E_dend_Km_gKm")
-    net.select(edges="all").make_trainable("E_dend_CaL_gCaL")
-    net.select(edges="all").make_trainable("E_dend_CaT_gCaT")
+    net.make_trainable("E_dend_Km_gKm")
+    net.make_trainable("E_dend_CaL_gCaL")
+    net.make_trainable("E_dend_CaT_gCaT")
 
-    net.select(edges="all").make_trainable("I_Km_gKm")
-    net.select(edges="all").make_trainable("I_CaL_gCaL")
-    net.select(edges="all").make_trainable("I_CaT_gCaT")
+    net.make_trainable("I_Km_gKm")
+    net.make_trainable("I_CaL_gCaL")
+    net.make_trainable("I_CaT_gCaT")
 
     parameters = net.get_parameters()
     key = jax.random.PRNGKey(0)
