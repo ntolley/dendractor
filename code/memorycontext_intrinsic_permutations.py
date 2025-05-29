@@ -105,9 +105,27 @@ def simulate_sweep(theta, params, cue_currents, context_currents, seed):
     net.delete_stimuli()
     
     noise_scale = 0.06
-    cue_noise = jax.random.normal(key=seed_key[0], shape=cue_currents.shape) * noise_scale
-    context_noise = jax.random.normal(key=seed_key[1], shape=context_currents.shape) * noise_scale
-    
+    # cue_noise = jax.random.normal(key=seed_key[0], shape=cue_currents.shape) * noise_scale
+    # context_noise = jax.random.normal(key=seed_key[1], shape=context_currents.shape) * noise_scale
+
+
+    # Only add noise during stim period
+    cue_noise = jnp.zeros(shape=cue_currents.shape)
+    context_noise = jnp.zeros(shape=context_currents.shape)
+    stim_len = 1000
+    # cue_start = 0
+    cue_start = 28000
+    cue_stop = cue_start + stim_len
+    cue_noise = cue_noise.at[:, cue_start:cue_stop].set(
+        jax.random.normal(key=seed_key[1], shape=(context_currents.shape[0], stim_len)) * noise_scale)
+        
+    # context_start = 0
+    context_start = 10000
+    context_stop = context_start + stim_len
+    context_noise = context_noise.at[:, context_start:context_stop].set(
+        jax.random.normal(key=seed_key[2], shape=(context_currents.shape[0], stim_len)) * noise_scale)
+
+    # Attach stimulation
     data_stimuli = net.cell(list(gid_ranges['cue'])).branch(0).comp(0).data_stimulate(cue_currents + cue_noise)
     data_stimuli = net.cell(list(gid_ranges['context'])).branch(0).comp(0).data_stimulate(
         context_currents + context_noise, data_stimuli=data_stimuli)
@@ -140,30 +158,25 @@ if __name__ == "__main__":
     data_path = f'{save_path}/{config_name}'
     os.makedirs(f'{data_path}/tmp', exist_ok=True)
 
-    dt = 0.05
-    t_max = 2000
+    # dt = 0.05
+    dt = 0.025
+    # t_max = 2000
+    t_max = 1000
     time_vec = jnp.arange(0, t_max, dt)
 
+    # Number of samples before calculating error
+    burn_in = 30_000
+
     downsample_factor = 10
-    # dt_flow = dt * downsample_factor
-    # fs_flow = (1/dt_flow) * 1e3
-    # time_vec_flow = np.arange(0, t_max, dt_flow)
-    # burn_in = int(8000 / downsample_factor)
 
     prior_dict = get_prior_dict()
     update_prior_dict(prior_dict)
 
-    # Used to reduce GPU memory (passed to simulate function)
-    # levels = 2
-    # time_points = t_max // dt + 2
-    # checkpoints = [int(np.ceil(time_points**(1/levels))) for _ in range(levels)]
+
 
     net, gid_ranges = make_network()
     with open(f'{data_path}/jaxley_net.pkl', 'wb') as f:
         pickle.dump((net, gid_ranges),f)
-
-    # with open(f'{data_path}/jaxley_net.pkl', 'rb') as f:
-    #     net, gid_ranges = pickle.load(f)
 
     num_E_cells, num_I_cells = len(gid_ranges['E']), len(gid_ranges['I'])
     num_cue_cells = len(gid_ranges['cue'])
@@ -176,11 +189,15 @@ if __name__ == "__main__":
     num_prior_fits = 5
     num_iter = 5000
 
-    num_repeats = 1
+    # batch_size = 5
+    # num_repeats = 5
+
+    batch_size = 5
+    num_repeats = 10
     # input_list = jnp.array([[-2,-2,1], [2,2,1], [-2, 2,1], [2,-2,1],
     #                         [-2,-2,-1], [2,2,-1], [-2, 2,-1], [2,-2,-1]])
-    input_list = jnp.array([[-2,-2,1], [2,2,1],
-                            [-2,-2,-1], [2,2,-1]])
+    input_list = jnp.array([[-2,-2,1], [2,2,1], [-2,-2,-1], [2,2,-1]])
+    num_inputs = input_list.shape[0]
     input_list = jnp.tile(input_list, (num_repeats, 1))
 
     num_cond = input_list.shape[0]
@@ -189,9 +206,8 @@ if __name__ == "__main__":
     cue_currents = jnp.stack([input_data[idx][0] for idx in range(num_cond)])
     context_currents = jnp.stack([input_data[idx][1] for idx in range(num_cond)])
 
-    targets_train = np.concatenate([input_data[idx][2][:2, ::downsample_factor] for idx in range(num_cond)], axis=1).T
+    targets_list = np.array([input_data[idx][2][:2, burn_in::downsample_factor] for idx in range(num_cond)])
 
-    batch_size = 10
     cue_currents_batch = jnp.tile(cue_currents, (batch_size, 1, 1))
     context_currents_batch = jnp.tile(context_currents, (batch_size, 1, 1))
     print(cue_currents_batch.shape)
@@ -219,20 +235,39 @@ if __name__ == "__main__":
 
             seed_batch = jnp.arange(start_idx*num_cond, end_idx*num_cond)
             output = np.array(jitted_vmapped_simulate(theta_batch, params, cue_currents_batch, context_currents_batch, seed_batch))
-            output = output[:, :, ::downsample_factor]
+            output = output[:, :, burn_in::downsample_factor]
 
             for batch_idx in range(0, batch_size):
                 batch_offset = batch_idx * num_cond
-                x_train = list()
+                x_list = list()
                 for cond_idx in range(num_cond):
-                    x_train.append(output[cond_idx + batch_offset, :, :])
-                x_train = np.concatenate(x_train, axis=1).T
+                    x_list.append(output[cond_idx + batch_offset, :, :])
+                x_list = np.array(x_list)
+                # x_train = np.concatenate(x_train, axis=1).T
 
-                y_pred = model.fit(x_train, targets_train).predict(x_train)
-                error = np.mean(np.square(targets_train - y_pred))
+                temp_error_list = list()
+                for val_start in range(0, num_cond, num_inputs):
+                    val_stop = val_start + num_inputs
+                    val_mask = np.zeros(num_cond).astype(bool)
+                    val_mask[val_start:val_stop] = True
+                    train_mask = ~val_mask
+
+                    x_train = np.concatenate(x_list[train_mask], axis=1).T
+                    x_val = np.concatenate(x_list[val_mask], axis=1).T
+                    targets_train = np.concatenate(targets_list[train_mask], axis=1).T
+                    targets_val = np.concatenate(targets_list[val_mask], axis=1).T
+
+                    y_pred = model.fit(x_train, targets_train).predict(x_val)
+                    y_pred[y_pred > 2.0] = 2.0 # hard threshold on max value
+                    y_pred[y_pred < -2.0] = -2.0 # hard threshold on max value
+
+                    temp_error = np.mean(np.square(targets_val - y_pred))
+                    temp_error_list.append(temp_error)
+
+                error = np.mean(temp_error_list)
 
                 error_list.append(error)
-                print(f'Batch {start_idx + batch_idx}; error: {error}')
+                print(f'Batch {start_idx + batch_idx}; avg error: {error}; error_list: {temp_error_list}')
 
             # x_train1 = list()
             # for cond_idx in range(num_train):

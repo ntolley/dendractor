@@ -155,11 +155,14 @@ def make_network():
         cell.branch(0).set('length', 5.0)
         cell.branch(0).set('radius', 5.0 / 2)
 
-    num_E_cells = 100
-    num_I_cells = 50
-    num_context_cells = 50
-    num_cue_cells = 50
-
+    # num_E_cells = 100
+    # num_I_cells = 50
+    # num_context_cells = 50
+    # num_cue_cells = 50
+    num_E_cells = 50
+    num_I_cells = 25
+    num_context_cells = 25
+    num_cue_cells = 25
 
     net_dict = {
         'E': {'num_cells': num_E_cells, 'cell': E_cell},
@@ -296,13 +299,13 @@ def make_network():
     connectivity_matrix_connect(net.cell(gid_ranges['I']).branch(0).comp(0), net.cell(gid_ranges['I']).branch(0).comp(0), synapse_type=II_gaba_synapse,
                                          connectivity_matrix=get_conn_matrix(I_indices, I_indices, seed=126))
 
-    sparse_connect(net.cell(gid_ranges['cue']).branch(0).comp(0), net.cell(gid_ranges['E']).branch(0).comp(0), synapse_type=cue_ampa_synapse, p=0.5)
-    sparse_connect(net.cell(gid_ranges['cue']).branch(0).comp(0), net.cell(gid_ranges['E']).branch(3).comp(3), synapse_type=cue_dend_ampa_synapse, p=0.5)
-    sparse_connect(net.cell(gid_ranges['cue']).branch(0).comp(0), net.cell(gid_ranges['I']).branch(0).comp(0), synapse_type=cue_ampa_synapse, p=0.5)
+    sparse_connect(net.cell(gid_ranges['cue']).branch(0).comp(0), net.cell(gid_ranges['E']).branch(0).comp(0), synapse_type=cue_ampa_synapse, p=0.3)
+    sparse_connect(net.cell(gid_ranges['cue']).branch(0).comp(0), net.cell(gid_ranges['E']).branch(3).comp(3), synapse_type=cue_dend_ampa_synapse, p=0.3)
+    sparse_connect(net.cell(gid_ranges['cue']).branch(0).comp(0), net.cell(gid_ranges['I']).branch(0).comp(0), synapse_type=cue_ampa_synapse, p=0.3)
 
-    sparse_connect(net.cell(gid_ranges['context']).branch(0).comp(0), net.cell(gid_ranges['E']).branch(0).comp(0), synapse_type=context_ampa_synapse, p=0.5)
-    sparse_connect(net.cell(gid_ranges['context']).branch(0).comp(0), net.cell(gid_ranges['E']).branch(3).comp(3), synapse_type=context_dend_ampa_synapse, p=0.5)
-    sparse_connect(net.cell(gid_ranges['context']).branch(0).comp(0), net.cell(gid_ranges['I']).branch(0).comp(0), synapse_type=context_ampa_synapse, p=0.5)
+    sparse_connect(net.cell(gid_ranges['context']).branch(0).comp(0), net.cell(gid_ranges['E']).branch(0).comp(0), synapse_type=context_ampa_synapse, p=0.3)
+    sparse_connect(net.cell(gid_ranges['context']).branch(0).comp(0), net.cell(gid_ranges['E']).branch(3).comp(3), synapse_type=context_dend_ampa_synapse, p=0.3)
+    sparse_connect(net.cell(gid_ranges['context']).branch(0).comp(0), net.cell(gid_ranges['I']).branch(0).comp(0), synapse_type=context_ampa_synapse, p=0.3)
 
     connectivity_matrix_connect(net.cell(gid_ranges['E']).branch(0).comp(0), net.cell(gid_ranges['E_rate']).branch(0).comp(0),
                                 synapse_type=exp_synapse, connectivity_matrix=np.eye(num_E_cells).astype(bool))
@@ -544,13 +547,22 @@ def get_currents(inputs, gid_ranges, t_max=500, dt=0.025):
     # context_start = 10000
     # context_stop = context_start + stim_len
 
-    stim_len = 500
+    # stim_len = 500
+    # stim_scaling = 0.1
+
+    # cue_start = 20000
+    # cue_stop = cue_start + stim_len
+
+    # context_start = 5000
+    # context_stop = context_start + stim_len
+
+    stim_len = 1000
     stim_scaling = 0.1
 
-    cue_start = 20000
+    cue_start = 28000
     cue_stop = cue_start + stim_len
 
-    context_start = 5000
+    context_start = 10000
     context_stop = context_start + stim_len
 
     # cue currents
