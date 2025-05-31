@@ -23,6 +23,8 @@ import pickle
 import torch
 from torch import optim
 from sbi import utils as utils
+from sbi.inference import NPE
+from sbi.utils import RestrictedPrior, get_density_thresholder
 from tqdm import tqdm
 
 from network_utils import (make_network, set_train_parameters, get_currents, log_scale_forward, linear_scale_forward,
@@ -113,16 +115,20 @@ def simulate_sweep(theta, params, cue_currents, context_currents, seed):
     cue_noise = jnp.zeros(shape=cue_currents.shape)
     context_noise = jnp.zeros(shape=context_currents.shape)
     stim_len = 1000
-    # cue_start = 0
     cue_start = 28000
     cue_stop = cue_start + stim_len
     cue_noise = cue_noise.at[:, cue_start:cue_stop].set(
         jax.random.normal(key=seed_key[1], shape=(context_currents.shape[0], stim_len)) * noise_scale)
+
+    cue_noise = cue_noise.at[:, 0:stim_len].set(
+        jax.random.normal(key=seed_key[1], shape=(context_currents.shape[0], stim_len)) * noise_scale)
         
-    # context_start = 0
     context_start = 10000
     context_stop = context_start + stim_len
     context_noise = context_noise.at[:, context_start:context_stop].set(
+        jax.random.normal(key=seed_key[2], shape=(context_currents.shape[0], stim_len)) * noise_scale)
+
+    context_noise = context_noise.at[:, 0:stim_len].set(
         jax.random.normal(key=seed_key[2], shape=(context_currents.shape[0], stim_len)) * noise_scale)
 
     # Attach stimulation
@@ -186,10 +192,11 @@ if __name__ == "__main__":
 
     # num_simulations = 250
     num_simulations = 100
-    num_prior_fits = 5
+    # num_simulations = 20
+    num_prior_fits = 10
     num_iter = 5000
 
-    # batch_size = 5
+    # batch_size = 10
     # num_repeats = 5
 
     batch_size = 5
@@ -215,18 +222,20 @@ if __name__ == "__main__":
     jitted_simulate = jit(simulate_sweep)
     jitted_vmapped_simulate = vmap(jitted_simulate, in_axes=(0, None, 0, 0, 0))
 
-    for flow_idx in range(num_prior_fits):
-        if flow_idx == 0:
-            prior = UniformPrior(parameters=list(prior_dict.keys()))
-        else:
-            prior = prior_filtered
+    # Set up SBI objects
+    prior = UniformPrior(parameters=list(prior_dict.keys()))
+    proposal = prior
+    inference = NPE(prior)
+    global_min = 1e6
 
-        theta = jnp.array(prior.sample((num_simulations,)).numpy())
+    for flow_idx in range(num_prior_fits):
+        theta = jnp.array(proposal.sample((num_simulations,)).numpy())
 
         np.save(f'{data_path}/theta_{flow_idx}.npy', theta)
 
         # Run simulations in batch
         error_list = list()
+        y_pred_list = list()
         model = Ridge(alpha=2.0)
         for start_idx in range(0, num_simulations, batch_size):
             end_idx = np.min([start_idx + batch_size, num_simulations])
@@ -237,6 +246,7 @@ if __name__ == "__main__":
             output = np.array(jitted_vmapped_simulate(theta_batch, params, cue_currents_batch, context_currents_batch, seed_batch))
             output = output[:, :, burn_in::downsample_factor]
 
+            # Loop over each unique parameter set (theta)
             for batch_idx in range(0, batch_size):
                 batch_offset = batch_idx * num_cond
                 x_list = list()
@@ -245,7 +255,9 @@ if __name__ == "__main__":
                 x_list = np.array(x_list)
                 # x_train = np.concatenate(x_train, axis=1).T
 
+                # Cross validation loop
                 temp_error_list = list()
+                temp_y_pred_list = list()
                 for val_start in range(0, num_cond, num_inputs):
                     val_stop = val_start + num_inputs
                     val_mask = np.zeros(num_cond).astype(bool)
@@ -257,59 +269,66 @@ if __name__ == "__main__":
                     targets_train = np.concatenate(targets_list[train_mask], axis=1).T
                     targets_val = np.concatenate(targets_list[val_mask], axis=1).T
 
+                    # Calculate errors
                     y_pred = model.fit(x_train, targets_train).predict(x_val)
-                    y_pred[y_pred > 2.0] = 2.0 # hard threshold on max value
-                    y_pred[y_pred < -2.0] = -2.0 # hard threshold on max value
-
                     temp_error = np.mean(np.square(targets_val - y_pred))
                     temp_error_list.append(temp_error)
 
+                    # Calculate mean output of network
+                    y_pred_cond = [np.mean(model.predict(x_val_cond.T), axis=0) for x_val_cond in x_list[val_mask]]
+                    temp_y_pred_list.append(np.concatenate(y_pred_cond))
+
+                # Update with average predicted output over (vector of size (num_inputs))
+                y_pred_avg = np.mean(np.array(temp_y_pred_list), axis=0)
+                y_pred_list.append(y_pred_avg)
+
                 error = np.mean(temp_error_list)
-
                 error_list.append(error)
-                print(f'Batch {start_idx + batch_idx}; avg error: {error}; error_list: {temp_error_list}')
+                print(f'Batch {start_idx + batch_idx}; avg error: {error}; y_pred: {y_pred_avg}')
 
-            # x_train1 = list()
-            # for cond_idx in range(num_train):
-            #     x_train1.append(output[cond_idx, :, :])
-            # x_train1 = np.concatenate(x_train1, axis=1).T
-
-            # x_train2 = list()
-            # for cond_idx in range(num_train, num_cond):
-            #     x_train2.append(output[cond_idx, :, :])
-            # x_train2 = np.concatenate(x_train2, axis=1).T
-
-            # y_pred2 = model.fit(x_train1[burn_in:, :], targets_train1[burn_in:, :]).predict(x_train2[burn_in:, :])
-            # error2 = np.mean(np.square(targets_train2[burn_in:, :] - y_pred2))
-
-            # y_pred1 = model.fit(x_train2[burn_in:, :], targets_train2[burn_in:, :]).predict(x_train1[burn_in:, :])
-            # error1 = np.mean(np.square(targets_train1[burn_in:, :] - y_pred1))
-
-            # error_list.append(np.mean([error1, error2]))
-
-        # Train flow for new prior
+        # Save batch simulation outputs
         error_list = np.array(error_list)
         np.save(f'{data_path}/flow_error_{flow_idx}.npy', error_list)
 
-        error_threshold = np.quantile(error_list, 0.1)
-        mask = error_list < error_threshold
+        y_pred_list = np.array(y_pred_list)
+        print(f'y_pred shape: {y_pred_list.shape}')
+        np.save(f'{data_path}/y_pred_{flow_idx}.npy', error_list)
 
-        print(f'Error Threshold: {error_threshold}')
-        print(f'{np.sum(mask)} sims remaining')
+        round_min = np.min(error_list)
+        if round_min < global_min:
+            global_min = round_min
+        x0_target_output = torch.tensor(global_min).float()
+        print(f'Average error: {np.mean(error_list)}; new target: {x0_target_output.numpy()}')
+        print(x0_target_output.shape)
 
-        # Filter theta using feature masks, take top simulations that separate inputs
-        theta_filter = np.array(theta[mask])
-        prior_filtered = PriorFiltered(parameters=list(prior_dict.keys()))
-        optimizer = optim.Adam(prior_filtered.flow.parameters())
 
-        # Train flow
-        num_iter = 5000
-        for i in tqdm(range(num_iter)):
-            optimizer.zero_grad()
-            loss = -prior_filtered.flow.log_prob(inputs=theta_filter).mean()
-            loss.backward()
-            optimizer.step()
-        state_dict = prior_filtered.flow.state_dict()
-        joblib.dump(state_dict, f'{data_path}/prior_filtered_flow_{flow_idx}.pkl')
+        # Train flow for new prior
+        x_tensor = torch.tensor(error_list).reshape(-1, 1).float()
+        _ = inference.append_simulations(torch.tensor(np.array(theta)).float(), x_tensor).train(force_first_round_loss=True)
+        posterior = inference.build_posterior().set_default_x(x0_target_output)
+
+        accept_reject_fn = get_density_thresholder(posterior, quantile=1e-4)
+        proposal = RestrictedPrior(prior, accept_reject_fn, sample_with="rejection")
+
+        with open(f'{data_path}/inference_{flow_idx}.pkl', "wb") as handle:
+            pickle.dump(inference, handle)
+
+        # error_threshold = np.quantile(error_list, 0.1)
+        # mask = error_list < error_threshold
+
+        # # Filter theta using feature masks, take top simulations that separate inputs
+        # theta_filter = np.array(theta[mask])
+        # prior_filtered = PriorFiltered(parameters=list(prior_dict.keys()))
+        # optimizer = optim.Adam(prior_filtered.flow.parameters())
+
+        # # Train flow
+        # num_iter = 5000
+        # for i in tqdm(range(num_iter)):
+        #     optimizer.zero_grad()
+        #     loss = -prior_filtered.flow.log_prob(inputs=theta_filter).mean()
+        #     loss.backward()
+        #     optimizer.step()
+        # state_dict = prior_filtered.flow.state_dict()
+        # joblib.dump(state_dict, f'{data_path}/prior_filtered_flow_{flow_idx}.pkl')
 
 
