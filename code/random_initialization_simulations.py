@@ -40,11 +40,11 @@ config_list = [
     ('Edend_Idend', prior_config.update_prior_dict_Edend_Idend), # 1
     ('Esoma_Idend', prior_config.update_prior_dict_Esoma_Idend), # 2
     ('Edend_Isoma', prior_config.update_prior_dict_Edend_Isoma), # 3
-    # ('Esoma_Isomadend', prior_config.update_prior_dict_Esoma_Isomadend), # 4
+    ('Esoma_Isomadend', prior_config.update_prior_dict_Esoma_Isomadend), # 4
     # ('Edend_Isomadend', prior_config.update_prior_dict_Edend_Isomadend), # 5
     # ('Esomadend_Isoma', prior_config.update_prior_dict_Esomadend_Isoma), # 6
     # ('Esomadend_Idend', prior_config.update_prior_dict_Esomadend_Idend), # 7
-    ('Esomadend_Isomadend', prior_config.update_prior_dict_Esomadend_Isomadend) # 8
+    # ('Esomadend_Isomadend', prior_config.update_prior_dict_Esomadend_Isomadend) # 8
     ]
 
 def simulate_sweep(theta, params, cue_currents, context_currents, seed):
@@ -100,25 +100,29 @@ def simulate_sweep(theta, params, cue_currents, context_currents, seed):
     net.delete_stimuli()
     
     noise_scale = 0.06
-    cue_noise = jax.random.normal(key=seed_key[0], shape=cue_currents.shape) * noise_scale
-    context_noise = jax.random.normal(key=seed_key[1], shape=context_currents.shape) * noise_scale
+    # cue_noise = jax.random.normal(key=seed_key[0], shape=cue_currents.shape) * noise_scale
+    # context_noise = jax.random.normal(key=seed_key[1], shape=context_currents.shape) * noise_scale
 
 
     # Only add noise during stim period
-    # cue_noise = jnp.zeros(shape=cue_currents.shape)
-    # context_noise = jnp.zeros(shape=context_currents.shape)
-    # stim_len = 1000
-    # # cue_start = 0
-    # cue_start = 28000
-    # cue_stop = cue_start + stim_len
-    # cue_noise = cue_noise.at[:, cue_start:cue_stop].set(
-    #     jax.random.normal(key=seed_key[1], shape=(context_currents.shape[0], stim_len)) * noise_scale)
+    cue_noise = jnp.zeros(shape=cue_currents.shape)
+    context_noise = jnp.zeros(shape=context_currents.shape)
+    stim_len = 1000
+    cue_start = 28000
+    cue_stop = cue_start + stim_len
+    cue_noise = cue_noise.at[:, cue_start:cue_stop].set(
+        jax.random.normal(key=seed_key[1], shape=(context_currents.shape[0], stim_len)) * noise_scale)
+
+    cue_noise = cue_noise.at[:, 0:stim_len].set(
+        jax.random.normal(key=seed_key[1], shape=(context_currents.shape[0], stim_len)) * noise_scale)
         
-    # # context_start = 0
-    # context_start = 10000
-    # context_stop = context_start + stim_len
-    # context_noise = context_noise.at[:, context_start:context_stop].set(
-    #     jax.random.normal(key=seed_key[2], shape=(context_currents.shape[0], stim_len)) * noise_scale)
+    context_start = 10000
+    context_stop = context_start + stim_len
+    context_noise = context_noise.at[:, context_start:context_stop].set(
+        jax.random.normal(key=seed_key[2], shape=(context_currents.shape[0], stim_len)) * noise_scale)
+
+    context_noise = context_noise.at[:, 0:stim_len].set(
+        jax.random.normal(key=seed_key[2], shape=(context_currents.shape[0], stim_len)) * noise_scale)
 
     # Attach stimulation
     data_stimuli = net.cell(list(gid_ranges['cue'])).branch(0).comp(0).data_stimulate(cue_currents + cue_noise)
@@ -145,7 +149,7 @@ def get_opt_data(data_path):
     theta_list = list()
     error_list = list()
 
-    num_flows = 1
+    num_flows = 3
     for flow_idx in range(num_flows):
         print(f'Flow {flow_idx}')
         theta = np.load(f'{data_path}/theta_{flow_idx}.npy')
@@ -169,7 +173,7 @@ def get_opt_data(data_path):
 
 
 if __name__ == "__main__":
-    flow_idx = 0 # flow used for random init simulations
+    flow_idx = 2 # flow used for random init simulations
 
     dt = 0.025
     t_max = 1000

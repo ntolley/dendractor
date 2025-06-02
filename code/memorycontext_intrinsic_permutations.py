@@ -192,15 +192,20 @@ if __name__ == "__main__":
 
     # num_simulations = 250
     num_simulations = 100
-    # num_simulations = 20
+    # num_simulations = 40
+
     num_prior_fits = 10
     num_iter = 5000
 
-    # batch_size = 10
-    # num_repeats = 5
+    # batch_size = 20
+    # num_repeats = 2
 
-    batch_size = 5
-    num_repeats = 10
+    batch_size = 10
+    num_repeats = 5
+
+    # batch_size = 5
+    # num_repeats = 10
+
     # input_list = jnp.array([[-2,-2,1], [2,2,1], [-2, 2,1], [2,-2,1],
     #                         [-2,-2,-1], [2,2,-1], [-2, 2,-1], [2,-2,-1]])
     input_list = jnp.array([[-2,-2,1], [2,2,1], [-2,-2,-1], [2,2,-1]])
@@ -226,7 +231,11 @@ if __name__ == "__main__":
     prior = UniformPrior(parameters=list(prior_dict.keys()))
     proposal = prior
     inference = NPE(prior)
-    global_min = 1e6
+    global_error_threshold = 1.0
+
+    # Accumulate theta values to train on every round
+    all_theta_list = list()
+    all_error_list = list()
 
     for flow_idx in range(num_prior_fits):
         theta = jnp.array(proposal.sample((num_simulations,)).numpy())
@@ -284,51 +293,47 @@ if __name__ == "__main__":
 
                 error = np.mean(temp_error_list)
                 error_list.append(error)
-                print(f'Batch {start_idx + batch_idx}; avg error: {error}; y_pred: {y_pred_avg}')
+                print(f'Batch {start_idx + batch_idx}; avg error: {error}')
 
         # Save batch simulation outputs
         error_list = np.array(error_list)
         np.save(f'{data_path}/flow_error_{flow_idx}.npy', error_list)
 
-        y_pred_list = np.array(y_pred_list)
-        print(f'y_pred shape: {y_pred_list.shape}')
-        np.save(f'{data_path}/y_pred_{flow_idx}.npy', error_list)
+        # Heavily penalize chance level predictions
+        y_pred_mask = np.mean(np.abs(y_pred_list), axis=1) < 0.2
+        error_list[y_pred_mask] += 1e3
+        print(f'{np.sum(y_pred_mask)} null simulations')
 
-        round_min = np.min(error_list)
-        if round_min < global_min:
-            global_min = round_min
-        x0_target_output = torch.tensor(global_min).float()
-        print(f'Average error: {np.mean(error_list)}; new target: {x0_target_output.numpy()}')
-        print(x0_target_output.shape)
+        error_threshold = np.quantile(error_list, 0.1)
+        if error_threshold < global_error_threshold:
+            error_threshold = global_error_threshold
+
+        all_error_list.append(error_list)
+        all_theta_list.append(theta)
+
+        error_train = np.concatenate(all_error_list)
+        error_mask = error_train < error_threshold
+
+        theta_train = np.concatenate(all_theta_list, axis=0)
+        theta_train = theta_train[error_mask, :]
+        print(f'Theta Train Shape: {theta_train.shape}')
+        
+
+        print(f'Error Threshold: {error_threshold}')
 
 
-        # Train flow for new prior
-        x_tensor = torch.tensor(error_list).reshape(-1, 1).float()
-        _ = inference.append_simulations(torch.tensor(np.array(theta)).float(), x_tensor).train(force_first_round_loss=True)
-        posterior = inference.build_posterior().set_default_x(x0_target_output)
+        # Filter theta using feature masks, take top simulations that separate inputs
+        proposal = PriorFiltered(parameters=list(prior_dict.keys()))
+        optimizer = optim.Adam(proposal.flow.parameters())
 
-        accept_reject_fn = get_density_thresholder(posterior, quantile=1e-4)
-        proposal = RestrictedPrior(prior, accept_reject_fn, sample_with="rejection")
-
-        with open(f'{data_path}/inference_{flow_idx}.pkl', "wb") as handle:
-            pickle.dump(inference, handle)
-
-        # error_threshold = np.quantile(error_list, 0.1)
-        # mask = error_list < error_threshold
-
-        # # Filter theta using feature masks, take top simulations that separate inputs
-        # theta_filter = np.array(theta[mask])
-        # prior_filtered = PriorFiltered(parameters=list(prior_dict.keys()))
-        # optimizer = optim.Adam(prior_filtered.flow.parameters())
-
-        # # Train flow
-        # num_iter = 5000
-        # for i in tqdm(range(num_iter)):
-        #     optimizer.zero_grad()
-        #     loss = -prior_filtered.flow.log_prob(inputs=theta_filter).mean()
-        #     loss.backward()
-        #     optimizer.step()
-        # state_dict = prior_filtered.flow.state_dict()
-        # joblib.dump(state_dict, f'{data_path}/prior_filtered_flow_{flow_idx}.pkl')
+        # Train flow
+        num_iter = 5000
+        for i in tqdm(range(num_iter)):
+            optimizer.zero_grad()
+            loss = -proposal.flow.log_prob(inputs=theta_train).mean()
+            loss.backward()
+            optimizer.step()
+        state_dict = proposal.flow.state_dict()
+        joblib.dump(state_dict, f'{data_path}/prior_filtered_flow_{flow_idx}.pkl')
 
 
