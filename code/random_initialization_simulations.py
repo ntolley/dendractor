@@ -36,15 +36,15 @@ import intrinsic_prior_configurations as prior_config
 save_path = '/users/ntolley/data/ntolley/dendractor/intrinsic_permutations'
 
 config_list = [
-    ('Esoma_Isoma', prior_config.update_prior_dict_Esoma_Isoma), # 0
-    ('Edend_Idend', prior_config.update_prior_dict_Edend_Idend), # 1
-    ('Esoma_Idend', prior_config.update_prior_dict_Esoma_Idend), # 2
-    ('Edend_Isoma', prior_config.update_prior_dict_Edend_Isoma), # 3
-    ('Esoma_Isomadend', prior_config.update_prior_dict_Esoma_Isomadend), # 4
-    # ('Edend_Isomadend', prior_config.update_prior_dict_Edend_Isomadend), # 5
-    # ('Esomadend_Isoma', prior_config.update_prior_dict_Esomadend_Isoma), # 6
-    # ('Esomadend_Idend', prior_config.update_prior_dict_Esomadend_Idend), # 7
-    # ('Esomadend_Isomadend', prior_config.update_prior_dict_Esomadend_Isomadend) # 8
+    # ('Esoma_Isoma', prior_config.update_prior_dict_Esoma_Isoma), # 0
+    # ('Edend_Idend', prior_config.update_prior_dict_Edend_Idend), # 1
+    # ('Esoma_Idend', prior_config.update_prior_dict_Esoma_Idend), # 2
+    # ('Edend_Isoma', prior_config.update_prior_dict_Edend_Isoma), # 3
+    # ('Esoma_Isomadend', prior_config.update_prior_dict_Esoma_Isomadend), # 4
+    ('Edend_Isomadend', prior_config.update_prior_dict_Edend_Isomadend), # 5
+    ('Esomadend_Isoma', prior_config.update_prior_dict_Esomadend_Isoma), # 6
+    ('Esomadend_Idend', prior_config.update_prior_dict_Esomadend_Idend), # 7
+    ('Esomadend_Isomadend', prior_config.update_prior_dict_Esomadend_Isomadend) # 8
     ]
 
 def simulate_sweep(theta, params, cue_currents, context_currents, seed):
@@ -149,7 +149,7 @@ def get_opt_data(data_path):
     theta_list = list()
     error_list = list()
 
-    num_flows = 10
+    num_flows = 9
     for flow_idx in range(num_flows):
         print(f'Flow {flow_idx}')
         theta = np.load(f'{data_path}/theta_{flow_idx}.npy')
