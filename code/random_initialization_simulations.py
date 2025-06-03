@@ -149,7 +149,7 @@ def get_opt_data(data_path):
     theta_list = list()
     error_list = list()
 
-    num_flows = 3
+    num_flows = 10
     for flow_idx in range(num_flows):
         print(f'Flow {flow_idx}')
         theta = np.load(f'{data_path}/theta_{flow_idx}.npy')
@@ -173,17 +173,11 @@ def get_opt_data(data_path):
 
 
 if __name__ == "__main__":
-    flow_idx = 2 # flow used for random init simulations
-
     dt = 0.025
     t_max = 1000
     time_vec = jnp.arange(0, t_max, dt)
 
     downsample_factor = 10
-    dt_flow = dt * downsample_factor
-    fs_flow = (1/dt_flow) * 1e3
-    time_vec_flow = np.arange(0, t_max, dt_flow)
-    burn_in = int(8000 / downsample_factor)
 
     for config_name, update_prior_dict in config_list:
         data_path = f'{save_path}/{config_name}'
@@ -192,10 +186,26 @@ if __name__ == "__main__":
             net, gid_ranges = pickle.load(f)
 
         res_dict = get_opt_data(data_path)
-        theta = res_dict['theta_list'][flow_idx]
-        theta_sort = np.argsort(res_dict['error_list'][flow_idx])
+
+        # # Choose best from all sims
+        # theta = np.concatenate(res_dict['theta_list'], axis=0)
+        # error = np.concatenate(res_dict['error_list'])
+        # theta_sort = np.argsort(error)
+        # theta_idx = theta_sort[0]
+
+        # Choose theta with error closest to target error
+        # target_error = 0.25
+        # theta = np.concatenate(res_dict['theta_list'], axis=0)
+        # error = np.concatenate(res_dict['error_list'])
+        # theta_idx = np.argmin(np.abs(error - target_error))
+
+        # # Choose best from last run
+        theta = res_dict['theta_list'][-1]
+        error = res_dict['error_list'][-1]
+        theta_sort = np.argsort(error)
         theta_idx = theta_sort[0]
-        print(f"Starting error: {res_dict['error_list'][flow_idx][theta_idx]}")
+
+        print(f"Starting error: {error[theta_idx]}")
 
         num_E_cells, num_I_cells = len(gid_ranges['E']), len(gid_ranges['I'])
         num_cue_cells = len(gid_ranges['cue'])
