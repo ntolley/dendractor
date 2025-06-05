@@ -33,29 +33,20 @@ from flow_utils import UniformPrior, PriorFiltered
 from sklearn.linear_model import LinearRegression, Ridge
 
 from neurodsp.spectral import compute_spectrum
-import intrinsic_prior_configurations as prior_config
+import extrinsic_prior_configurations as prior_config
 
 def get_save_path():
-    save_path = '/users/ntolley/data/ntolley/dendractor/intrinsic_permutations_somaampa_dendnmda'
-    # save_path = '/users/ntolley/data/ntolley/dendractor/intrinsic_permutations_nmda'
-    # save_path = '/users/ntolley/data/ntolley/dendractor/intrinsic_permutations_nmdav2'
-    # save_path = '/users/ntolley/data/ntolley/dendractor/intrinsic_permutations_ampa'
+    save_path = '/users/ntolley/data/ntolley/dendractor/extrinsic_permutations'
     return save_path
 
 def get_config_list():
     config_list = [
-        ('Esoma_Isoma', prior_config.update_prior_dict_Esoma_Isoma), # 0
-        ('Edend_Idend', prior_config.update_prior_dict_Edend_Idend), # 1
-        ('Esoma_Idend', prior_config.update_prior_dict_Esoma_Idend), # 2
-        ('Edend_Isoma', prior_config.update_prior_dict_Edend_Isoma), # 3
-        ('Esoma_Isomadend', prior_config.update_prior_dict_Esoma_Isomadend), # 4
-        ('Edend_Isomadend', prior_config.update_prior_dict_Edend_Isomadend), # 5
-        ('Esomadend_Isoma', prior_config.update_prior_dict_Esomadend_Isoma), # 6
-        ('Esomadend_Idend', prior_config.update_prior_dict_Esomadend_Idend), # 7
-        ('Esomadend_Isomadend', prior_config.update_prior_dict_Esomadend_Isomadend) # 8
+        ('contextsoma_cuesoma', prior_config.update_prior_dict_contextsoma_cuesoma), # 0
+        ('contextdend_cuedend', prior_config.update_prior_dict_contextdend_cuedend), # 1
+        ('contextsoma_cuedend', prior_config.update_prior_dict_contextsoma_cuedend), # 2
+        ('contextdend_cuesoma', prior_config.update_prior_dict_contextdend_cuesoma), # 3
         ]
     return config_list
-
 
 def simulate_sweep(theta, params, cue_currents, context_currents, seed):
     seed_key = jax.random.split(jax.random.PRNGKey(seed), num=4)
@@ -248,6 +239,8 @@ if __name__ == "__main__":
             for batch_idx in range(0, batch_size):
                 batch_offset = batch_idx * num_cond
                 x_list = list()
+                for cond_idx in range(num_cond):
+                    x_list.append(output[cond_idx + batch_offset, :, :])
                 x_list = np.array(x_list)
                 # x_train = np.concatenate(x_train, axis=1).T
 
