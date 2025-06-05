@@ -249,6 +249,8 @@ if __name__ == "__main__":
             for batch_idx in range(0, batch_size):
                 batch_offset = batch_idx * num_cond
                 x_list = list()
+                for cond_idx in range(num_cond):
+                    x_list.append(output[cond_idx + batch_offset, :, :])
                 x_list = np.array(x_list)
                 # x_train = np.concatenate(x_train, axis=1).T
 
