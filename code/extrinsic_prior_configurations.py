@@ -27,54 +27,54 @@ def set_prior_Esomadend_Isomadend(prior_dict):
 def update_prior_dict_contextsoma_cuesoma(prior_dict):
     set_prior_Esomadend_Isomadend(prior_dict)
 
-    prior_dict['cue_ampa_gS']['bounds'] = input_g_on
-    prior_dict['context_ampa_gS']['bounds'] = input_g_on
-    prior_dict['cue_ampa_pconn']['bounds'] = input_p_on
-    prior_dict['context_ampa_pconn']['bounds'] = input_p_on
+    prior_dict['cue_Esoma_ampa_gS']['bounds'] = input_g_on
+    prior_dict['context_Esoma_ampa_gS']['bounds'] = input_g_on
+    prior_dict['cue_Esoma_ampa_pconn']['bounds'] = input_p_on
+    prior_dict['context_Esoma_ampa_pconn']['bounds'] = input_p_on
 
-    prior_dict['cue_dend_ampa_gS']['bounds'] = g_off
-    prior_dict['context_dend_ampa_gS']['bounds'] = g_off
-    prior_dict['cue_dend_ampa_pconn']['bounds'] = p_off
-    prior_dict['context_dend_ampa_pconn']['bounds'] = p_off
+    prior_dict['cue_Edend_ampa_gS']['bounds'] = g_off
+    prior_dict['context_Edend_ampa_gS']['bounds'] = g_off
+    prior_dict['cue_Edend_ampa_pconn']['bounds'] = p_off
+    prior_dict['context_Edend_ampa_pconn']['bounds'] = p_off
 
 def update_prior_dict_contextdend_cuedend(prior_dict):
     set_prior_Esomadend_Isomadend(prior_dict)
 
-    prior_dict['cue_ampa_gS']['bounds'] = g_off
-    prior_dict['context_ampa_gS']['bounds'] = g_off
-    prior_dict['cue_ampa_pconn']['bounds'] = p_off
-    prior_dict['context_ampa_pconn']['bounds'] = p_off
+    prior_dict['cue_Esoma_ampa_gS']['bounds'] = g_off
+    prior_dict['context_Esoma_ampa_gS']['bounds'] = g_off
+    prior_dict['cue_Esoma_ampa_pconn']['bounds'] = p_off
+    prior_dict['context_Esoma_ampa_pconn']['bounds'] = p_off
 
-    prior_dict['cue_dend_ampa_gS']['bounds'] = input_g_on
-    prior_dict['context_dend_ampa_gS']['bounds'] = input_g_on
-    prior_dict['cue_dend_ampa_pconn']['bounds'] = input_p_on
-    prior_dict['context_dend_ampa_pconn']['bounds'] = input_p_on
+    prior_dict['cue_Edend_ampa_gS']['bounds'] = input_g_on
+    prior_dict['context_Edend_ampa_gS']['bounds'] = input_g_on
+    prior_dict['cue_Edend_ampa_pconn']['bounds'] = input_p_on
+    prior_dict['context_Edend_ampa_pconn']['bounds'] = input_p_on
 
 def update_prior_dict_contextsoma_cuedend(prior_dict):
     set_prior_Esomadend_Isomadend(prior_dict)
 
-    prior_dict['cue_ampa_gS']['bounds'] = g_off
-    prior_dict['context_ampa_gS']['bounds'] = input_g_on
-    prior_dict['cue_ampa_pconn']['bounds'] = p_off
-    prior_dict['context_ampa_pconn']['bounds'] = input_p_on
+    prior_dict['cue_Esoma_ampa_gS']['bounds'] = g_off
+    prior_dict['context_Esoma_ampa_gS']['bounds'] = input_g_on
+    prior_dict['cue_Esoma_ampa_pconn']['bounds'] = p_off
+    prior_dict['context_Esoma_ampa_pconn']['bounds'] = input_p_on
 
-    prior_dict['cue_dend_ampa_gS']['bounds'] = input_g_on
-    prior_dict['context_dend_ampa_gS']['bounds'] = g_off
-    prior_dict['cue_dend_ampa_pconn']['bounds'] = input_p_on
-    prior_dict['context_dend_ampa_pconn']['bounds'] = p_off
+    prior_dict['cue_Edend_ampa_gS']['bounds'] = input_g_on
+    prior_dict['context_Edend_ampa_gS']['bounds'] = g_off
+    prior_dict['cue_Edend_ampa_pconn']['bounds'] = input_p_on
+    prior_dict['context_Edend_ampa_pconn']['bounds'] = p_off
 
 def update_prior_dict_contextdend_cuesoma(prior_dict):
     set_prior_Esomadend_Isomadend(prior_dict)
 
-    prior_dict['cue_ampa_gS']['bounds'] = input_g_on
-    prior_dict['context_ampa_gS']['bounds'] = g_off
-    prior_dict['cue_ampa_pconn']['bounds'] = input_p_on
-    prior_dict['context_ampa_pconn']['bounds'] = p_off
+    prior_dict['cue_Esoma_ampa_gS']['bounds'] = input_g_on
+    prior_dict['context_Esoma_ampa_gS']['bounds'] = g_off
+    prior_dict['cue_Esoma_ampa_pconn']['bounds'] = input_p_on
+    prior_dict['context_Esoma_ampa_pconn']['bounds'] = p_off
 
-    prior_dict['cue_dend_ampa_gS']['bounds'] = g_off
-    prior_dict['context_dend_ampa_gS']['bounds'] = input_g_on
-    prior_dict['cue_dend_ampa_pconn']['bounds'] = input_p_on
-    prior_dict['context_dend_ampa_pconn']['bounds'] = p_off
+    prior_dict['cue_Edend_ampa_gS']['bounds'] = g_off
+    prior_dict['context_Edend_ampa_gS']['bounds'] = input_g_on
+    prior_dict['cue_Edend_ampa_pconn']['bounds'] = input_p_on
+    prior_dict['context_Edend_ampa_pconn']['bounds'] = p_off
 
 
 

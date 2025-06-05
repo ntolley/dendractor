@@ -36,10 +36,11 @@ from neurodsp.spectral import compute_spectrum
 import intrinsic_prior_configurations as prior_config
 
 def get_save_path():
-    save_path = '/users/ntolley/data/ntolley/dendractor/intrinsic_permutations_somaampa_dendnmda'
+    # save_path = '/users/ntolley/data/ntolley/dendractor/intrinsic_permutations'
     # save_path = '/users/ntolley/data/ntolley/dendractor/intrinsic_permutations_nmda'
     # save_path = '/users/ntolley/data/ntolley/dendractor/intrinsic_permutations_nmdav2'
     # save_path = '/users/ntolley/data/ntolley/dendractor/intrinsic_permutations_ampa'
+    save_path = '/users/ntolley/data/ntolley/dendractor/intrinsic_permutations_somaampa_dendnmda'
     return save_path
 
 def get_config_list():
