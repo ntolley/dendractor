@@ -39,7 +39,7 @@ def get_save_path():
     # save_path = '/users/ntolley/data/ntolley/dendractor/extrinsic_permutations'
     # save_path = '/users/ntolley/data/ntolley/dendractor/extrinsic_permutations_subnetwork_outputs'
     # save_path = '/users/ntolley/data/ntolley/dendractor/extrinsic_permutations_subnet_cluster5'
-    save_path = '/users/ntolley/data/ntolley/dendractor/extrinsic_permutations_subnet_largenet'
+    save_path = '/users/ntolley/data/ntolley/dendractor/extrinsic_permutations_subnet_highprob_cuecontext'
 
     return save_path
 
