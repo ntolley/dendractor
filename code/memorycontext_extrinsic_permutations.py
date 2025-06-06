@@ -38,7 +38,8 @@ import extrinsic_prior_configurations as prior_config
 def get_save_path():
     # save_path = '/users/ntolley/data/ntolley/dendractor/extrinsic_permutations'
     # save_path = '/users/ntolley/data/ntolley/dendractor/extrinsic_permutations_subnetwork_outputs'
-    save_path = '/users/ntolley/data/ntolley/dendractor/extrinsic_permutations_subnet_cluster5'
+    # save_path = '/users/ntolley/data/ntolley/dendractor/extrinsic_permutations_subnet_cluster5'
+    save_path = '/users/ntolley/data/ntolley/dendractor/extrinsic_permutations_subnet_largenet'
 
     return save_path
 
@@ -183,7 +184,7 @@ if __name__ == "__main__":
     # batch_size = 20
     # num_repeats = 2
 
-    batch_size = 10
+    batch_size = 5
     num_repeats = 5
 
     # batch_size = 5

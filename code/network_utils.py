@@ -91,7 +91,7 @@ def gaussian_tuning(tuned_val, state_val, sigma):
 
 
 def get_conn_matrix(src_indices, target_indices, seed=123, p_conn=1.0):
-    graph = gaussian_random_partition_graph(n=600, s=5, v=1e10, p_in=1.0, p_out=0.01)
+    graph = gaussian_random_partition_graph(n=600, s=10, v=1e10, p_in=1.0, p_out=0.01)
 
     conn_rng = np.random.default_rng(seed)
 
@@ -156,14 +156,14 @@ def make_network():
         cell.branch(0).set('length', 5.0)
         cell.branch(0).set('radius', 5.0 / 2)
 
-    # num_E_cells = 100
-    # num_I_cells = 50
-    # num_context_cells = 50
-    # num_cue_cells = 50
-    num_E_cells = 50
-    num_I_cells = 25
-    num_context_cells = 25
-    num_cue_cells = 25
+    num_E_cells = 100
+    num_I_cells = 50
+    num_context_cells = 50
+    num_cue_cells = 50
+    # num_E_cells = 50
+    # num_I_cells = 25
+    # num_context_cells = 25
+    # num_cue_cells = 25
 
     net_dict = {
         'E': {'num_cells': num_E_cells, 'cell': E_cell},
