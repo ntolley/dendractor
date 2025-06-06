@@ -40,6 +40,7 @@ def get_save_path():
     # save_path = '/users/ntolley/data/ntolley/dendractor/extrinsic_permutations_subnetwork_outputs'
     # save_path = '/users/ntolley/data/ntolley/dendractor/extrinsic_permutations_subnet_cluster5'
     save_path = '/users/ntolley/data/ntolley/dendractor/extrinsic_permutations_subnet_highprob_cuecontext'
+    # save_path = '/users/ntolley/data/ntolley/dendractor/extrinsic_permutations_subnet_highprob_cuecontext_ring_k5'
 
     return save_path
 
@@ -184,7 +185,7 @@ if __name__ == "__main__":
     # batch_size = 20
     # num_repeats = 2
 
-    batch_size = 5
+    batch_size = 10
     num_repeats = 5
 
     # batch_size = 5
