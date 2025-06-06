@@ -91,7 +91,7 @@ def gaussian_tuning(tuned_val, state_val, sigma):
 
 
 def get_conn_matrix(src_indices, target_indices, seed=123, p_conn=1.0):
-    graph = gaussian_random_partition_graph(n=600, s=10, v=1e10, p_in=1.0, p_out=0.01)
+    graph = gaussian_random_partition_graph(n=600, s=5, v=1e10, p_in=1.0, p_out=0.01)
 
     conn_rng = np.random.default_rng(seed)
 
@@ -324,18 +324,27 @@ def make_network():
     # *******************************************
 
 
-    sparse_connect(net.cell(gid_ranges['cue']).branch(0).comp(0), net.cell(gid_ranges['E']).branch(0).comp(0), synapse_type=cue_Esoma_ampa_synapse, p=0.3)
-    sparse_connect(net.cell(gid_ranges['cue']).branch(0).comp(0), net.cell(gid_ranges['E']).branch(3).comp(3), synapse_type=cue_Edend_ampa_synapse, p=0.3)
-    sparse_connect(net.cell(gid_ranges['cue']).branch(0).comp(0), net.cell(gid_ranges['I']).branch(0).comp(0), synapse_type=cue_I_ampa_synapse, p=0.3)
+    # Non overlapping cells for input/output of network
+    E_in_gids = list(gid_ranges['E'])[::2]
+    I_in_gids = list(gid_ranges['I'])[::2]
 
-    sparse_connect(net.cell(gid_ranges['context']).branch(0).comp(0), net.cell(gid_ranges['E']).branch(0).comp(0), synapse_type=context_Esoma_ampa_synapse, p=0.3)
-    sparse_connect(net.cell(gid_ranges['context']).branch(0).comp(0), net.cell(gid_ranges['E']).branch(3).comp(3), synapse_type=context_Edend_ampa_synapse, p=0.3)
-    sparse_connect(net.cell(gid_ranges['context']).branch(0).comp(0), net.cell(gid_ranges['I']).branch(0).comp(0), synapse_type=context_I_ampa_synapse, p=0.3)
+    E_out_gids = list(gid_ranges['E'])[1::2]
+    E_out_rate_gids = list(gid_ranges['E_rate'])[1::2]
+    I_out_gids = list(gid_ranges['I'])[1::2]
+    I_out_rate_gids = list(gid_ranges['I_rate'])[1::2]
 
-    connectivity_matrix_connect(net.cell(gid_ranges['E']).branch(0).comp(0), net.cell(gid_ranges['E_rate']).branch(0).comp(0),
-                                synapse_type=exp_synapse, connectivity_matrix=np.eye(num_E_cells).astype(bool))
-    connectivity_matrix_connect(net.cell(gid_ranges['I']).branch(0).comp(0), net.cell(gid_ranges['I_rate']).branch(0).comp(0),
-                                synapse_type=exp_synapse, connectivity_matrix=np.eye(num_I_cells).astype(bool))
+    sparse_connect(net.cell(gid_ranges['cue']).branch(0).comp(0), net.cell(E_in_gids).branch(0).comp(0), synapse_type=cue_Esoma_ampa_synapse, p=0.3)
+    sparse_connect(net.cell(gid_ranges['cue']).branch(0).comp(0), net.cell(E_in_gids).branch(3).comp(3), synapse_type=cue_Edend_ampa_synapse, p=0.3)
+    sparse_connect(net.cell(gid_ranges['cue']).branch(0).comp(0), net.cell(I_in_gids).branch(0).comp(0), synapse_type=cue_I_ampa_synapse, p=0.3)
+
+    sparse_connect(net.cell(gid_ranges['context']).branch(0).comp(0), net.cell(E_in_gids).branch(0).comp(0), synapse_type=context_Esoma_ampa_synapse, p=0.3)
+    sparse_connect(net.cell(gid_ranges['context']).branch(0).comp(0), net.cell(E_in_gids).branch(3).comp(3), synapse_type=context_Edend_ampa_synapse, p=0.3)
+    sparse_connect(net.cell(gid_ranges['context']).branch(0).comp(0), net.cell(I_in_gids).branch(0).comp(0), synapse_type=context_I_ampa_synapse, p=0.3)
+
+    connectivity_matrix_connect(net.cell(E_out_gids).branch(0).comp(0), net.cell(E_out_rate_gids).branch(0).comp(0),
+                                synapse_type=exp_synapse, connectivity_matrix=np.eye(len(E_out_gids)).astype(bool))
+    connectivity_matrix_connect(net.cell(I_out_gids).branch(0).comp(0), net.cell(I_out_rate_gids).branch(0).comp(0),
+                                synapse_type=exp_synapse, connectivity_matrix=np.eye(len(I_out_gids)).astype(bool))
 
     net.copy_node_property_to_edges("global_cell_index")
 

@@ -36,7 +36,10 @@ from neurodsp.spectral import compute_spectrum
 import extrinsic_prior_configurations as prior_config
 
 def get_save_path():
-    save_path = '/users/ntolley/data/ntolley/dendractor/extrinsic_permutations'
+    # save_path = '/users/ntolley/data/ntolley/dendractor/extrinsic_permutations'
+    # save_path = '/users/ntolley/data/ntolley/dendractor/extrinsic_permutations_subnetwork_outputs'
+    save_path = '/users/ntolley/data/ntolley/dendractor/extrinsic_permutations_subnet_cluster5'
+
     return save_path
 
 def get_config_list():
