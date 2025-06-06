@@ -312,6 +312,16 @@ def make_network():
                                          connectivity_matrix=get_conn_matrix(I_indices, I_indices, seed=126))
     # *******************************************
 
+    # I->E soma and dendrite
+    # sparse_connect(net.cell(gid_ranges['I']).branch(0).comp(0), net.cell(gid_ranges['E']).branch(0).comp(0), synapse_type=IE_gaba_synapse,
+    #                             p=0.3)
+    # sparse_connect(net.cell(gid_ranges['I']).branch(0).comp(0), net.cell(gid_ranges['E']).branch(3).comp(3), synapse_type=IE_dend_gaba_synapse,
+    #                             p=0.3)
+
+
+    # sparse_connect(net.cell(gid_ranges['I']).branch(0).comp(0), net.cell(gid_ranges['I']).branch(0).comp(0), synapse_type=II_gaba_synapse,
+    #                                      p=0.3)
+    # *******************************************
 
 
     sparse_connect(net.cell(gid_ranges['cue']).branch(0).comp(0), net.cell(gid_ranges['E']).branch(0).comp(0), synapse_type=cue_Esoma_ampa_synapse, p=0.3)

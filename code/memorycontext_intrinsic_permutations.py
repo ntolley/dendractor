@@ -41,6 +41,7 @@ def get_save_path():
     # save_path = '/users/ntolley/data/ntolley/dendractor/intrinsic_permutations_nmdav2'
     # save_path = '/users/ntolley/data/ntolley/dendractor/intrinsic_permutations_ampa'
     save_path = '/users/ntolley/data/ntolley/dendractor/intrinsic_permutations_somaampa_dendnmda'
+    # save_path = '/users/ntolley/data/ntolley/dendractor/intrinsic_permutations_somaampa_dendnmda_sparseI'
     return save_path
 
 def get_config_list():

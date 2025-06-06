@@ -26,24 +26,25 @@ from sbi import utils as utils
 from tqdm import tqdm
 
 from network_utils import (make_network, set_train_parameters, get_currents, log_scale_forward, linear_scale_forward,
-                           get_prior_dict, initialize_params)
+                           get_prior_dict, initialize_params, get_parameter_names)
 from flow_utils import UniformPrior, PriorFiltered
 from sklearn.linear_model import LinearRegression, Ridge
 
 from neurodsp.spectral import compute_spectrum
 import intrinsic_prior_configurations as prior_config
 
-save_path = '/users/ntolley/data/ntolley/dendractor/intrinsic_permutations'
+# save_path = '/users/ntolley/data/ntolley/dendractor/intrinsic_permutations'
+save_path = '/users/ntolley/data/ntolley/dendractor/intrinsic_permutations_somaampa_dendnmda'
 
 config_list = [
-    # ('Esoma_Isoma', prior_config.update_prior_dict_Esoma_Isoma), # 0
+    ('Esoma_Isoma', prior_config.update_prior_dict_Esoma_Isoma), # 0
     # ('Edend_Idend', prior_config.update_prior_dict_Edend_Idend), # 1
     # ('Esoma_Idend', prior_config.update_prior_dict_Esoma_Idend), # 2
     # ('Edend_Isoma', prior_config.update_prior_dict_Edend_Isoma), # 3
     # ('Esoma_Isomadend', prior_config.update_prior_dict_Esoma_Isomadend), # 4
-    ('Edend_Isomadend', prior_config.update_prior_dict_Edend_Isomadend), # 5
-    ('Esomadend_Isoma', prior_config.update_prior_dict_Esomadend_Isoma), # 6
-    ('Esomadend_Idend', prior_config.update_prior_dict_Esomadend_Idend), # 7
+    # ('Edend_Isomadend', prior_config.update_prior_dict_Edend_Isomadend), # 5
+    # ('Esomadend_Isoma', prior_config.update_prior_dict_Esomadend_Isoma), # 6
+    # ('Esomadend_Idend', prior_config.update_prior_dict_Esomadend_Idend), # 7
     ('Esomadend_Isomadend', prior_config.update_prior_dict_Esomadend_Isomadend) # 8
     ]
 
@@ -51,17 +52,7 @@ def simulate_sweep(theta, params, cue_currents, context_currents, seed):
     seed_key = jax.random.split(jax.random.PRNGKey(seed), num=4)
     rng = np.random.default_rng(seed=123)
 
-    key_order = ["cue_ampa_gS", "context_ampa_gS",
-                 "IE_gaba_gS", "II_gaba_gS", "EI_ampa_gS", "EE_ampa_gS",
-                 "cue_dend_ampa_gS", "context_dend_ampa_gS",
-                 "IE_dend_gaba_gS", "EE_dend_ampa_gS",
-                 "cue_ampa_pconn", "context_ampa_pconn",
-                 "IE_gaba_pconn", "II_gaba_pconn", "EI_ampa_pconn", "EE_ampa_pconn",
-                 "cue_dend_ampa_pconn", "context_dend_ampa_pconn",
-                 "IE_dend_gaba_pconn", "EE_dend_ampa_pconn",
-                 "E_Leak_gLeak", "E_dend_Leak_gLeak", "I_Leak_gLeak",
-                 "E_Km_gKm", "E_CaL_gCaL", "E_CaT_gCaT", "I_Km_gKm", "I_CaL_gCaL", "I_CaT_gCaT",
-                 "E_dend_Km_gKm", "E_dend_CaL_gCaL", "E_dend_CaT_gCaT",]
+    key_order, conn_names, biophysics_names = get_parameter_names()
 
     # params is a list of single element dicitonaries, this is to just find the index
     key_mapping = {list(param_dict.keys())[0]: idx for idx, param_dict in enumerate(params)}
@@ -72,8 +63,7 @@ def simulate_sweep(theta, params, cue_currents, context_currents, seed):
     # Need to treat connections with special care
     # First create vector with identicial conductances for every synapse
     # Then mask out connections based on their probability
-    for conn_name in ["cue_ampa", "context_ampa", "cue_dend_ampa", "context_dend_ampa",
-                      "IE_gaba", "II_gaba", "EI_ampa", "EE_ampa", "IE_dend_gaba", "EE_dend_ampa"]:
+    for conn_name in conn_names:
         conn_g_name = f'{conn_name}_gS'
         conn_prob_name = f'{conn_name}_pconn'
         key_idx = key_mapping[conn_g_name]
@@ -86,10 +76,7 @@ def simulate_sweep(theta, params, cue_currents, context_currents, seed):
         params[key_idx][conn_g_name] = new_vals
 
     # No prob masking for biophysics, just update param vectors
-    for param_name in ["E_Leak_gLeak", "E_dend_Leak_gLeak", "I_Leak_gLeak",
-                       "E_Km_gKm", "E_CaL_gCaL", "E_CaT_gCaT",
-                       "I_Km_gKm", "I_CaL_gCaL", "I_CaT_gCaT",
-                       "E_dend_Km_gKm", "E_dend_CaL_gCaL", "E_dend_CaT_gCaT",]:
+    for param_name in biophysics_names:
         key_idx = key_mapping[param_name]
         num_vals = len(params[key_idx][param_name])
 
@@ -137,7 +124,6 @@ def simulate_sweep(theta, params, cue_currents, context_currents, seed):
     param_state = net.cell(list(gid_ranges['E'])).data_set('v', E_voltages, param_state)
     param_state = net.cell(list(gid_ranges['I'])).data_set('v', I_voltages, param_state)
 
-
     net.delete_recordings()
     net.branch(0).comp(0).record('v')
 
@@ -149,7 +135,7 @@ def get_opt_data(data_path):
     theta_list = list()
     error_list = list()
 
-    num_flows = 9
+    num_flows = 7
     for flow_idx in range(num_flows):
         print(f'Flow {flow_idx}')
         theta = np.load(f'{data_path}/theta_{flow_idx}.npy')
@@ -188,10 +174,10 @@ if __name__ == "__main__":
         res_dict = get_opt_data(data_path)
 
         # # Choose best from all sims
-        # theta = np.concatenate(res_dict['theta_list'], axis=0)
-        # error = np.concatenate(res_dict['error_list'])
-        # theta_sort = np.argsort(error)
-        # theta_idx = theta_sort[0]
+        theta = np.concatenate(res_dict['theta_list'], axis=0)
+        error = np.concatenate(res_dict['error_list'])
+        theta_sort = np.argsort(error)
+        theta_idx = theta_sort[0]
 
         # Choose theta with error closest to target error
         # target_error = 0.25
@@ -200,10 +186,10 @@ if __name__ == "__main__":
         # theta_idx = np.argmin(np.abs(error - target_error))
 
         # # Choose best from last run
-        theta = res_dict['theta_list'][-1]
-        error = res_dict['error_list'][-1]
-        theta_sort = np.argsort(error)
-        theta_idx = theta_sort[0]
+        # theta = res_dict['theta_list'][-1]
+        # error = res_dict['error_list'][-1]
+        # theta_sort = np.argsort(error)
+        # theta_idx = theta_sort[0]
 
         print(f"Starting error: {error[theta_idx]}")
 
@@ -262,7 +248,11 @@ if __name__ == "__main__":
             'gid_ranges': gid_ranges
         }
 
-        random_init_save_path = '/users/ntolley/data/ntolley/dendractor/intrinsic_permutations/random_initialization'
+        random_init_save_path = f'{save_path}/random_initialization'
+
+        # Set up folder paths
+        os.makedirs(random_init_save_path, exist_ok=True)
+
         fname = f'{config_name}_random_init.pkl'
         with open(f'{random_init_save_path}/{fname}', 'wb') as f:
             pickle.dump(random_init_dict,f)
