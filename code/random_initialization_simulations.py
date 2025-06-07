@@ -31,13 +31,12 @@ from flow_utils import UniformPrior, PriorFiltered
 from sklearn.linear_model import LinearRegression, Ridge
 
 from neurodsp.spectral import compute_spectrum
-import intrinsic_prior_configurations as prior_config
 
+# import intrinsic_prior_configurations as prior_config
 # save_path = '/users/ntolley/data/ntolley/dendractor/intrinsic_permutations'
-save_path = '/users/ntolley/data/ntolley/dendractor/intrinsic_permutations_somaampa_dendnmda'
-
-config_list = [
-    ('Esoma_Isoma', prior_config.update_prior_dict_Esoma_Isoma), # 0
+# save_path = '/users/ntolley/data/ntolley/dendractor/intrinsic_permutations_somaampa_dendnmda'
+# config_list = [
+    # ('Esoma_Isoma', prior_config.update_prior_dict_Esoma_Isoma), # 0
     # ('Edend_Idend', prior_config.update_prior_dict_Edend_Idend), # 1
     # ('Esoma_Idend', prior_config.update_prior_dict_Esoma_Idend), # 2
     # ('Edend_Isoma', prior_config.update_prior_dict_Edend_Isoma), # 3
@@ -45,7 +44,19 @@ config_list = [
     # ('Edend_Isomadend', prior_config.update_prior_dict_Edend_Isomadend), # 5
     # ('Esomadend_Isoma', prior_config.update_prior_dict_Esomadend_Isoma), # 6
     # ('Esomadend_Idend', prior_config.update_prior_dict_Esomadend_Idend), # 7
-    ('Esomadend_Isomadend', prior_config.update_prior_dict_Esomadend_Isomadend) # 8
+    # ('Esomadend_Isomadend', prior_config.update_prior_dict_Esomadend_Isomadend) # 8
+    # ]
+
+import extrinsic_prior_configurations as prior_config
+# save_path = '/users/ntolley/data/ntolley/dendractor/extrinsic_permutations_subnet_highprob_cuecontext'
+save_path = '/users/ntolley/data/ntolley/dendractor/extrinsic_permutations_subnet_highprob_cuecontext_ring_k10'
+# save_path = '/users/ntolley/data/ntolley/dendractor/extrinsic_permutations_subnet_highprob_cuecontext_ring_k5'
+
+config_list = [
+    # ('contextsoma_cuesoma', prior_config.update_prior_dict_contextsoma_cuesoma), # 0
+    ('contextdend_cuedend', prior_config.update_prior_dict_contextdend_cuedend), # 1
+    # ('contextsoma_cuedend', prior_config.update_prior_dict_contextsoma_cuedend), # 2
+    # ('contextdend_cuesoma', prior_config.update_prior_dict_contextdend_cuesoma), # 3
     ]
 
 def simulate_sweep(theta, params, cue_currents, context_currents, seed):
@@ -135,7 +146,7 @@ def get_opt_data(data_path):
     theta_list = list()
     error_list = list()
 
-    num_flows = 7
+    num_flows = 9
     for flow_idx in range(num_flows):
         print(f'Flow {flow_idx}')
         theta = np.load(f'{data_path}/theta_{flow_idx}.npy')
