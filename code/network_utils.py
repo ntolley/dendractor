@@ -333,10 +333,10 @@ def make_network():
     E_out_gids = list(gid_ranges['E'])[40:50]
     E_out_rate_gids = list(gid_ranges['E_rate'])[40:50]
 
-    I_in_cue_gids = list(gid_ranges['I'])[:20]
-    I_in_context_gids = list(gid_ranges['I'])[20:40]
-    I_out_gids = list(gid_ranges['I'])[40:50]
-    I_out_rate_gids = list(gid_ranges['I_rate'])[40:50]
+    I_in_cue_gids = list(gid_ranges['I'])[:10]
+    I_in_context_gids = list(gid_ranges['I'])[10:20]
+    I_out_gids = list(gid_ranges['I'])[20:25]
+    I_out_rate_gids = list(gid_ranges['I_rate'])[20:25]
 
     sparse_connect(net.cell(gid_ranges['cue']).branch(0).comp(0), net.cell(E_in_cue_gids).branch(0).comp(0), synapse_type=cue_Esoma_ampa_synapse, p=0.3)
     sparse_connect(net.cell(gid_ranges['cue']).branch(0).comp(0), net.cell(E_in_cue_gids).branch(3).comp(3), synapse_type=cue_Edend_ampa_synapse, p=0.3)
@@ -361,35 +361,6 @@ def make_network():
     return net, gid_ranges
 
 def set_train_parameters(net, gid_ranges):
-    # net.set('IE_gaba_e_syn', -80.0)
-    # net.set('IE_dend_gaba_e_syn', -80.0)
-    # net.set('II_gaba_e_syn', -80.0)
-
-    # k_minus = 0.1
-    # net.set('EE_ampa_k_minus', k_minus)
-    # net.set('EE_dend_ampa_k_minus', k_minus)
-    # net.set('EI_ampa_k_minus', k_minus)
-    # net.set('IE_gaba_k_minus', k_minus)
-    # net.set('IE_dend_gaba_k_minus', k_minus)
-    # net.set('II_gaba_k_minus', k_minus)
-    # net.set('cue_Esoma_ampa_k_minus', k_minus)
-    # net.set('cue_Edend_ampa_k_minus', k_minus)
-    # net.set('context_Esoma_ampa_k_minus', k_minus)
-    # net.set('context_Edend_ampa_k_minus', k_minus)
-    # net.set('cue_I_ampa_k_minus', k_minus)
-    # net.set('context_I_ampa_k_minus', k_minus)
-
-    # net.set('EE_ampa_gS', 1e-5)
-    # net.set('EE_dend_ampa_gS', 1e-5)
-    # net.set('EI_ampa_gS', 1e-5)
-    # net.set('IE_gaba_gS', 5e-5)
-    # net.set('IE_dend_gaba_gS', 5e-5)
-    # net.set('II_gaba_gS', 1e-5)
-    # net.set('cue_Esoma_ampa_gS', 1e-3)
-    # net.set('cue_Edend_ampa_gS', 1e-3)
-    # net.set('context_Esoma_ampa_gS', 1e-20)
-    # net.set('context_Edend_ampa_gS', 1e-20)
-
     net.set('exp_synapse_e_syn', 10.0)
     net.set('exp_synapse_k_minus', 0.1)
 
@@ -437,45 +408,7 @@ def set_train_parameters(net, gid_ranges):
     parameters.append({'W_out': jax.random.uniform(key=key,shape=(2, len(gid_ranges['E']),), minval=-0.5, maxval=0.5)})
     parameters.append({'b_out': jax.random.uniform(key=key,shape=(2, 1), minval=-0.1, maxval=0.1)})
 
-
-    # Define parameter transform and apply it to the parameters.
-    transform = jx.ParamTransform([
-        {"IE_gaba_gS": jt.SigmoidTransform(0.0, 1e-1)},
-        {"II_gaba_gS": jt.SigmoidTransform(0.0, 1e-1)},
-        {"EI_ampa_gS": jt.SigmoidTransform(0.0, 1e-1)},
-        {"EE_ampa_gS": jt.SigmoidTransform(0.0, 1e-1)},
-        {"EE_dend_ampa_gS": jt.SigmoidTransform(0.0, 1e-1)},
-        {"IE_dend_gaba_gS": jt.SigmoidTransform(0.0, 1e-1)},
-
-        {'cue_Esoma_ampa_gS': jt.SigmoidTransform(0.0, 1e-1)},
-        {'cue_Edend_ampa_gS': jt.SigmoidTransform(0.0, 1e-1)},
-        {'context_Esoma_ampa_gS': jt.SigmoidTransform(0.0, 1e-1)},
-        {'context_Edend_ampa_gS': jt.SigmoidTransform(0.0, 1e-1)},
-        {'cue_I_ampa_gS': jt.SigmoidTransform(0.0, 1e-1)},
-        {'context_I_ampa_gS': jt.SigmoidTransform(0.0, 1e-1)},
-
-        {'E_Leak_gLeak': jt.SigmoidTransform(0.0, 1e-1)},
-        {'E_dend_Leak_gLeak': jt.SigmoidTransform(0.0, 1e-1)},
-        {'I_Leak_gLeak': jt.SigmoidTransform(0.0, 1e-1)},
-
-        {'E_Km_gKm': jt.SigmoidTransform(0.0, 1e-1)},
-        {'E_CaL_gCaL': jt.SigmoidTransform(0.0, 1e-1)},
-        {'E_CaT_gCaT': jt.SigmoidTransform(0.0, 1e-1)},
-
-        {'E_dend_Km_gKm': jt.SigmoidTransform(0.0, 1e-1)},
-        {'E_dend_CaL_gCaL': jt.SigmoidTransform(0.0, 1e-1)},
-        {'E_dend_CaT_gCaT': jt.SigmoidTransform(0.0, 1e-1)},
-
-        {'I_Km_gKm': jt.SigmoidTransform(0.0, 1e-1)},
-        {'I_CaL_gCaL': jt.SigmoidTransform(0.0, 1e-1)},
-        {'I_CaT_gCaT': jt.SigmoidTransform(0.0, 1e-1)},
-
-        {"W_out": jt.SigmoidTransform(-10.0, 10.0)},
-        {"b_out": jt.SigmoidTransform(-10.0, 10.0)},
-
-    ])
-
-    return parameters, transform
+    return parameters, None
 
 def get_parameter_names():
     conn_names = ["cue_Esoma_ampa", "context_Esoma_ampa", "cue_Edend_ampa", "context_Edend_ampa",
