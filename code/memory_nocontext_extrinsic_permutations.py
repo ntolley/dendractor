@@ -36,7 +36,8 @@ from neurodsp.spectral import compute_spectrum
 import extrinsic_prior_configurations as prior_config
 
 def get_save_path():
-    save_path = '/users/ntolley/data/ntolley/dendractor/extrinsic_permutations_nocontext'
+    # save_path = '/users/ntolley/data/ntolley/dendractor/extrinsic_permutations_nocontext'
+    save_path = '/users/ntolley/data/ntolley/dendractor/extrinsic_permutations_nocontext_lowcueprob'
     return save_path
 
 def get_config_list():
@@ -95,7 +96,7 @@ def simulate_sweep(theta, params, cue_currents, context_currents, seed):
     cue_noise = jnp.zeros(shape=cue_currents.shape)
     context_noise = jnp.zeros(shape=context_currents.shape)
     stim_len = 1000
-    cue_start = 28000
+    cue_start = 10000
     cue_stop = cue_start + stim_len
     cue_noise = cue_noise.at[:, cue_start:cue_stop].set(
         jax.random.normal(key=seed_key[1], shape=(context_currents.shape[0], stim_len)) * noise_scale)
@@ -113,8 +114,8 @@ def simulate_sweep(theta, params, cue_currents, context_currents, seed):
 
     # Attach stimulation
     data_stimuli = net.cell(list(gid_ranges['cue'])).branch(0).comp(0).data_stimulate(cue_currents + cue_noise)
-    data_stimuli = net.cell(list(gid_ranges['context'])).branch(0).comp(0).data_stimulate(
-        context_currents + context_noise, data_stimuli=data_stimuli)
+    # data_stimuli = net.cell(list(gid_ranges['context'])).branch(0).comp(0).data_stimulate(
+    #     context_currents + context_noise, data_stimuli=data_stimuli)
 
     vmin, vmax = -80, -40
     E_voltages = jax.random.uniform(key=seed_key[2], minval=vmin, maxval=vmax, shape=(len(net.cell(list(gid_ranges['E'])).nodes),))
@@ -183,7 +184,7 @@ if __name__ == "__main__":
 
     num_cond = input_list.shape[0]
 
-    input_data = [get_currents(input_list[idx], gid_ranges, t_max, dt) for idx in range(num_cond)]
+    input_data = [get_currents_nocontext(input_list[idx], gid_ranges, t_max, dt) for idx in range(num_cond)]
     cue_currents = jnp.stack([input_data[idx][0] for idx in range(num_cond)])
     context_currents = jnp.stack([input_data[idx][1] for idx in range(num_cond)])
 
