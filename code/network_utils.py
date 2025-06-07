@@ -313,42 +313,24 @@ def make_network():
 
     connectivity_matrix_connect(net.cell(gid_ranges['I']).branch(0).comp(0), net.cell(gid_ranges['I']).branch(0).comp(0), synapse_type=II_gaba_synapse,
                                          connectivity_matrix=get_conn_matrix(I_indices, I_indices, seed=126))
-    # *******************************************
-
-    # I->E soma and dendrite
-    # sparse_connect(net.cell(gid_ranges['I']).branch(0).comp(0), net.cell(gid_ranges['E']).branch(0).comp(0), synapse_type=IE_gaba_synapse,
-    #                             p=0.3)
-    # sparse_connect(net.cell(gid_ranges['I']).branch(0).comp(0), net.cell(gid_ranges['E']).branch(3).comp(3), synapse_type=IE_dend_gaba_synapse,
-    #                             p=0.3)
-
-
-    # sparse_connect(net.cell(gid_ranges['I']).branch(0).comp(0), net.cell(gid_ranges['I']).branch(0).comp(0), synapse_type=II_gaba_synapse,
-    #                                      p=0.3)
-    # *******************************************
-
 
     # Non overlapping cells for input/output of network
-    E_in_cue_gids = list(gid_ranges['E'])[:20]
-    E_in_context_gids = list(gid_ranges['E'])[20:40]
-    E_out_gids = list(gid_ranges['E'])[40:50]
-    E_out_rate_gids = list(gid_ranges['E_rate'])[40:50]
+    E_in_gids = list(gid_ranges['E'])[::2]
+    E_out_gids = list(gid_ranges['E'])[1::2]
+    E_out_rate_gids = list(gid_ranges['E_rate'])[1::2]
 
-    I_in_cue_gids = list(gid_ranges['I'])[:10]
-    I_in_context_gids = list(gid_ranges['I'])[10:20]
-    I_out_gids = list(gid_ranges['I'])[20:25]
-    I_out_rate_gids = list(gid_ranges['I_rate'])[20:25]
+    I_in_gids = list(gid_ranges['I'])[::2]
+    I_out_gids = list(gid_ranges['I'])[1::2]
+    I_out_rate_gids = list(gid_ranges['I_rate'])[1::2]
 
-    sparse_connect(net.cell(gid_ranges['cue']).branch(0).comp(0), net.cell(E_in_cue_gids).branch(0).comp(0), synapse_type=cue_Esoma_ampa_synapse, p=0.3)
-    sparse_connect(net.cell(gid_ranges['cue']).branch(0).comp(0), net.cell(E_in_cue_gids).branch(3).comp(3), synapse_type=cue_Edend_ampa_synapse, p=0.3)
-    sparse_connect(net.cell(gid_ranges['cue']).branch(0).comp(0), net.cell(I_in_cue_gids).branch(0).comp(0), synapse_type=cue_I_ampa_synapse, p=0.3)
+    sparse_connect(net.cell(gid_ranges['cue']).branch(0).comp(0), net.cell(E_in_gids).branch(0).comp(0), synapse_type=cue_Esoma_ampa_synapse, p=0.6)
+    sparse_connect(net.cell(gid_ranges['cue']).branch(0).comp(0), net.cell(E_in_gids).branch(3).comp(3), synapse_type=cue_Edend_ampa_synapse, p=0.6)
+    sparse_connect(net.cell(gid_ranges['cue']).branch(0).comp(0), net.cell(I_in_gids).branch(0).comp(0), synapse_type=cue_I_ampa_synapse, p=0.6)
 
-    sparse_connect(net.cell(gid_ranges['context']).branch(0).comp(0), net.cell(E_in_context_gids).branch(0).comp(0), synapse_type=context_Esoma_ampa_synapse, p=0.3)
-    sparse_connect(net.cell(gid_ranges['context']).branch(0).comp(0), net.cell(E_in_context_gids).branch(3).comp(3), synapse_type=context_Edend_ampa_synapse, p=0.3)
-    sparse_connect(net.cell(gid_ranges['context']).branch(0).comp(0), net.cell(I_in_context_gids).branch(0).comp(0), synapse_type=context_I_ampa_synapse, p=0.3)
+    sparse_connect(net.cell(gid_ranges['context']).branch(0).comp(0), net.cell(E_in_gids).branch(0).comp(0), synapse_type=context_Esoma_ampa_synapse, p=0.6)
+    sparse_connect(net.cell(gid_ranges['context']).branch(0).comp(0), net.cell(E_in_gids).branch(3).comp(3), synapse_type=context_Edend_ampa_synapse, p=0.6)
+    sparse_connect(net.cell(gid_ranges['context']).branch(0).comp(0), net.cell(I_in_gids).branch(0).comp(0), synapse_type=context_I_ampa_synapse, p=0.6)
 
-    # Add excitatory outputs to out network
-    sparse_connect(net.cell(E_in_cue_gids + E_in_context_gids).branch(0).comp(0), net.cell(E_out_gids).branch(0).comp(0), synapse_type=EE_ampa_synapse, p=0.3)
-    sparse_connect(net.cell(E_in_cue_gids + E_in_context_gids).branch(0).comp(0), net.cell(E_out_gids).branch(3).comp(3), synapse_type=EE_dend_ampa_synapse, p=0.3)
 
 
     connectivity_matrix_connect(net.cell(E_out_gids).branch(0).comp(0), net.cell(E_out_rate_gids).branch(0).comp(0),
@@ -542,24 +524,6 @@ def get_currents(inputs, gid_ranges, t_max=500, dt=0.025):
     context_amplitudes = (np.sum(context_amplitudes, axis=1) / context_tuning_denom).reshape(-1, 1)
 
     # Define input start/stop times
-    # stim_len = 1000
-    # stim_scaling = 0.1
-
-    # cue_start = 40000
-    # cue_stop = cue_start + stim_len
-
-    # context_start = 10000
-    # context_stop = context_start + stim_len
-
-    # stim_len = 500
-    # stim_scaling = 0.1
-
-    # cue_start = 20000
-    # cue_stop = cue_start + stim_len
-
-    # context_start = 5000
-    # context_stop = context_start + stim_len
-
     stim_len = 1000
     stim_scaling = 0.1
 
@@ -580,6 +544,47 @@ def get_currents(inputs, gid_ranges, t_max=500, dt=0.025):
     context_currents[:, context_start:context_stop] = context_amplitudes
 
     context_currents = jnp.asarray(context_currents * stim_scaling)
+
+    target = jnp.zeros((3, len(time_vec) + 1))
+    target = target.at[:2, cue_start:].set(inputs[0:2].reshape(-1,1) * inputs[2])
+
+    return cue_currents, context_currents, target
+
+def get_currents_nocontext(inputs, gid_ranges, t_max=500, dt=0.025):
+    time_vec = jnp.arange(0, t_max, dt)
+    
+    cue_rng = np.random.default_rng(12345)
+
+    # calculate cue amplitudes
+    cue_dim = 2
+    cue_tuning = cue_rng.uniform(-3, 3, (len(gid_ranges['cue']), cue_dim))
+    cue_sigma = np.array(0.3)
+    cue_tuning_denom = gaussian_tuning(0, 0, cue_sigma) * cue_dim # ensures input intensity equals 1
+
+    cue_amplitudes = gaussian_tuning(inputs[0:2], cue_tuning, cue_sigma)
+    cue_amplitudes = (np.sum(cue_amplitudes, axis=1) / cue_tuning_denom).reshape(-1, 1)
+    baseline_amplitudes = gaussian_tuning(np.array([0.0, 0.0]), cue_tuning, cue_sigma)
+    baseline_amplitudes = (np.sum(baseline_amplitudes, axis=1) / cue_tuning_denom).reshape(-1, 1)
+
+
+    # Define input start/stop times
+    stim_len = 1000
+    stim_scaling = 0.1
+
+    cue_start = 10000
+    cue_stop = cue_start + stim_len
+
+    context_start = 10000
+    context_stop = context_start + stim_len
+
+    # cue currents
+    cue_currents = np.zeros((len(gid_ranges['cue']), len(time_vec)))
+    cue_currents[:, cue_start:cue_stop] = cue_amplitudes
+
+    cue_currents = jnp.asarray(cue_currents * stim_scaling)
+
+    # context currents
+    context_currents = np.zeros((len(gid_ranges['context']), len(time_vec)))
 
     target = jnp.zeros((3, len(time_vec) + 1))
     target = target.at[:2, cue_start:].set(inputs[0:2].reshape(-1,1) * inputs[2])
