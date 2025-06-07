@@ -37,7 +37,7 @@ import extrinsic_prior_configurations as prior_config
 
 def get_save_path():
     # save_path = '/users/ntolley/data/ntolley/dendractor/extrinsic_permutations_nocontext'
-    save_path = '/users/ntolley/data/ntolley/dendractor/extrinsic_permutations_nocontext_lowcueprob'
+    save_path = '/users/ntolley/data/ntolley/dendractor/extrinsic_permutations_nocontext_lowcueprob_somanmda'
     return save_path
 
 def get_config_list():

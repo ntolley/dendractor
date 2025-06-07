@@ -248,16 +248,16 @@ def make_network():
         net.cell(gid_ranges[name]).set('Leak_eLeak', 0.0)
         net.cell(gid_ranges[name]).set('v', 0.0)
 
-    cue_Esoma_ampa_synapse = AMPA()
-    # cue_Esoma_ampa_synapse = NMDA()
+    # cue_Esoma_ampa_synapse = AMPA()
+    cue_Esoma_ampa_synapse = NMDA()
     cue_Esoma_ampa_synapse.change_name('cue_Esoma_ampa')
 
     # cue_Edend_ampa_synapse = AMPA()
     cue_Edend_ampa_synapse = NMDA()
     cue_Edend_ampa_synapse.change_name('cue_Edend_ampa')
 
-    context_Esoma_ampa_synapse = AMPA()
-    # context_Esoma_ampa_synapse = NMDA()
+    # context_Esoma_ampa_synapse = AMPA()
+    context_Esoma_ampa_synapse = NMDA()
     context_Esoma_ampa_synapse.change_name('context_Esoma_ampa')
 
     # context_Edend_ampa_synapse = AMPA()
