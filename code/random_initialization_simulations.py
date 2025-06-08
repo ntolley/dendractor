@@ -34,7 +34,6 @@ from neurodsp.spectral import compute_spectrum
 
 # import intrinsic_prior_configurations as prior_config
 # save_path = '/users/ntolley/data/ntolley/dendractor/intrinsic_permutations'
-# save_path = '/users/ntolley/data/ntolley/dendractor/intrinsic_permutations_somaampa_dendnmda'
 # config_list = [
     # ('Esoma_Isoma', prior_config.update_prior_dict_Esoma_Isoma), # 0
     # ('Edend_Idend', prior_config.update_prior_dict_Edend_Idend), # 1
@@ -48,10 +47,9 @@ from neurodsp.spectral import compute_spectrum
     # ]
 
 import extrinsic_prior_configurations as prior_config
-# save_path = '/users/ntolley/data/ntolley/dendractor/extrinsic_permutations_subnet_highprob_cuecontext'
-# save_path = '/users/ntolley/data/ntolley/dendractor/extrinsic_permutations_subnet_highprob_cuecontext_ring_k10'
-# save_path = '/users/ntolley/data/ntolley/dendractor/extrinsic_permutations_subnet_highprob_cuecontext_ring_k5'
-save_path = '/users/ntolley/data/ntolley/dendractor/extrinsic_permutations_subnet_labeledlines_v2'
+# save_path = '/users/ntolley/data/ntolley/dendractor/extrinsic_permutations_nocontext_lowcueprob'
+# save_path = '/users/ntolley/data/ntolley/dendractor/extrinsic_permutations_nocontext_lowcueprob_somanmda'
+save_path = '/users/ntolley/data/ntolley/dendractor/extrinsic_permutations_subnet_lowprob'
 
 config_list = [
     # ('contextsoma_cuesoma', prior_config.update_prior_dict_contextsoma_cuesoma), # 0
@@ -147,7 +145,7 @@ def get_opt_data(data_path):
     theta_list = list()
     error_list = list()
 
-    num_flows = 1
+    num_flows = 8
     for flow_idx in range(num_flows):
         print(f'Flow {flow_idx}')
         theta = np.load(f'{data_path}/theta_{flow_idx}.npy')

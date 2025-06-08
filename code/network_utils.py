@@ -91,8 +91,8 @@ def gaussian_tuning(tuned_val, state_val, sigma):
 
 
 def get_conn_matrix(src_indices, target_indices, seed=123, p_conn=1.0):
-    graph = gaussian_random_partition_graph(n=600, s=10, v=1e10, p_in=1.0, p_out=0.0)
-    # graph = watts_strogatz_graph(n=600, k=10, p=0.0)
+    # graph = gaussian_random_partition_graph(n=600, s=10, v=1e10, p_in=1.0, p_out=0.0)
+    graph = watts_strogatz_graph(n=600, k=5, p=0.0)
 
     conn_rng = np.random.default_rng(seed)
 
@@ -248,8 +248,8 @@ def make_network():
         net.cell(gid_ranges[name]).set('Leak_eLeak', 0.0)
         net.cell(gid_ranges[name]).set('v', 0.0)
 
-    # cue_Esoma_ampa_synapse = AMPA()
-    cue_Esoma_ampa_synapse = NMDA()
+    cue_Esoma_ampa_synapse = AMPA()
+    # cue_Esoma_ampa_synapse = NMDA()
     cue_Esoma_ampa_synapse.change_name('cue_Esoma_ampa')
 
     # cue_Edend_ampa_synapse = AMPA()
@@ -260,8 +260,8 @@ def make_network():
     context_Esoma_ampa_synapse = NMDA()
     context_Esoma_ampa_synapse.change_name('context_Esoma_ampa')
 
-    # context_Edend_ampa_synapse = AMPA()
-    context_Edend_ampa_synapse = NMDA()
+    context_Edend_ampa_synapse = AMPA()
+    # context_Edend_ampa_synapse = NMDA()
     context_Edend_ampa_synapse.change_name('context_Edend_ampa')
 
     cue_I_ampa_synapse = AMPA()
