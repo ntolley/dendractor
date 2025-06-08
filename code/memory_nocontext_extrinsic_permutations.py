@@ -39,7 +39,8 @@ def get_save_path():
     # save_path = '/users/ntolley/data/ntolley/dendractor/extrinsic_permutations_nocontext'
     # save_path = '/users/ntolley/data/ntolley/dendractor/extrinsic_permutations_nocontext_lowcueprob_somanmda'
     # save_path = '/users/ntolley/data/ntolley/dendractor/extrinsic_permutations_nocontext_ringk5_somaampa_dendnmda_noise'
-    save_path = '/users/ntolley/data/ntolley/dendractor/extrinsic_permutations_nocontext_ringk10_somaampa_dendnmda_noise'
+    # save_path = '/users/ntolley/data/ntolley/dendractor/extrinsic_permutations_nocontext_ringk10_somaampa_dendnmda_noise'
+    save_path = '/users/ntolley/data/ntolley/dendractor/extrinsic_permutations_nocontext_ringk5_somaampa_dendnmda_strongreccurrent'
 
     return save_path
 
@@ -91,18 +92,18 @@ def simulate_sweep(theta, params, cue_currents, context_currents, seed):
     net.delete_stimuli()
     
     noise_scale = 0.06
-    cue_noise = jax.random.normal(key=seed_key[0], shape=cue_currents.shape) * noise_scale
+    # cue_noise = jax.random.normal(key=seed_key[0], shape=cue_currents.shape) * noise_scale
 
     # Only add noise during stim period
-    # cue_noise = jnp.zeros(shape=cue_currents.shape)
-    # stim_len = 1000
-    # cue_start = 10000
-    # cue_stop = cue_start + stim_len
-    # cue_noise = cue_noise.at[:, cue_start:cue_stop].set(
-    #     jax.random.normal(key=seed_key[1], shape=(context_currents.shape[0], stim_len)) * noise_scale)
+    cue_noise = jnp.zeros(shape=cue_currents.shape)
+    stim_len = 1000
+    cue_start = 10000
+    cue_stop = cue_start + stim_len
+    cue_noise = cue_noise.at[:, cue_start:cue_stop].set(
+        jax.random.normal(key=seed_key[1], shape=(context_currents.shape[0], stim_len)) * noise_scale)
 
-    # cue_noise = cue_noise.at[:, 0:stim_len].set(
-    #     jax.random.normal(key=seed_key[1], shape=(context_currents.shape[0], stim_len)) * noise_scale)
+    cue_noise = cue_noise.at[:, 0:stim_len].set(
+        jax.random.normal(key=seed_key[1], shape=(context_currents.shape[0], stim_len)) * noise_scale)
 
     # Attach stimulation
     data_stimuli = net.cell(list(gid_ranges['cue'])).branch(0).comp(0).data_stimulate(cue_currents + cue_noise)
