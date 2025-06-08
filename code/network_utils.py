@@ -92,7 +92,7 @@ def gaussian_tuning(tuned_val, state_val, sigma):
 
 def get_conn_matrix(src_indices, target_indices, seed=123, p_conn=1.0):
     # graph = gaussian_random_partition_graph(n=600, s=10, v=1e10, p_in=1.0, p_out=0.0)
-    graph = watts_strogatz_graph(n=600, k=5, p=0.0)
+    graph = watts_strogatz_graph(n=600, k=10, p=0.0)
 
     conn_rng = np.random.default_rng(seed)
 
