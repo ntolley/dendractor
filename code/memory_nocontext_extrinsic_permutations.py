@@ -38,7 +38,9 @@ import extrinsic_prior_configurations as prior_config
 def get_save_path():
     # save_path = '/users/ntolley/data/ntolley/dendractor/extrinsic_permutations_nocontext'
     # save_path = '/users/ntolley/data/ntolley/dendractor/extrinsic_permutations_nocontext_lowcueprob_somanmda'
-    save_path = '/users/ntolley/data/ntolley/dendractor/extrinsic_permutations_nocontext_ringk5_somaampa_dendnmda_noise'
+    # save_path = '/users/ntolley/data/ntolley/dendractor/extrinsic_permutations_nocontext_ringk5_somaampa_dendnmda_noise'
+    save_path = '/users/ntolley/data/ntolley/dendractor/extrinsic_permutations_nocontext_ringk10_somaampa_dendnmda_noise'
+
     return save_path
 
 def get_config_list():
