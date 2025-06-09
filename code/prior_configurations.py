@@ -4,7 +4,7 @@ p_on = (0, 0.6)
 g_off = (-20, -20)
 p_off = (0, 0)
 
-noise_g_on = (-1, -1)
+noise_g_on = (-2, -2)
 noise_p_on = (1, 1)
 
 cue_g_on = (-3, 1)

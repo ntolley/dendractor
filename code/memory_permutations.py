@@ -161,7 +161,7 @@ if __name__ == "__main__":
     num_prior_fits = 10
     num_iter = 5000
 
-    batch_size = 8
+    batch_size = 10
     num_repeats = 5
 
 
