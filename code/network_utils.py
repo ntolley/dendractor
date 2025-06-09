@@ -290,7 +290,7 @@ def make_network():
     II_gaba_synapse = GABAa()
     II_gaba_synapse.change_name('II_gaba')
 
-    exp_synapse = StimSynapse()
+    exp_synapse = AMPA()
     exp_synapse.change_name('exp_synapse')
 
     #  ******* CLUSTERED CONNECTIVITY *********
@@ -355,8 +355,8 @@ def make_network():
     return net, gid_ranges
 
 def set_train_parameters(net, gid_ranges):
-    net.set('exp_synapse_e_syn', 10.0)
-    net.set('exp_synapse_k_minus', 0.1)
+    net.set('exp_synapse_eAMPA', 10.0)
+    net.set('exp_synapse_gS', 1e-4)
 
     net.set('E_Km_gKm', 1e-5)
     net.set('E_CaL_gCaL', 1e-3)
