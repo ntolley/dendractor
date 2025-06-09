@@ -89,7 +89,7 @@ def simulate_sweep(theta, params, cue_currents, context_currents, seed):
     net.delete_stimuli()
     
     noise_scale = 0.06
-    add_noise = True
+    add_noise = False
     if add_noise:
         cue_noise = jax.random.normal(key=seed_key[0], shape=cue_currents.shape) * noise_scale
     else:
