@@ -273,11 +273,12 @@ def make_network():
     EI_ampa_synapse = AMPA()
     EI_ampa_synapse.change_name('EI_ampa')
 
-    EE_ampa_synapse = AMPA()
+    # EE_ampa_synapse = AMPA()
+    EE_ampa_synapse = NMDA()
     EE_ampa_synapse.change_name('EE_ampa')
 
-    # EE_dend_ampa_synapse = AMPA()
-    EE_dend_ampa_synapse = NMDA()
+    EE_dend_ampa_synapse = AMPA()
+    # EE_dend_ampa_synapse = NMDA()
     EE_dend_ampa_synapse.change_name('EE_dend_ampa')
 
     IE_gaba_synapse = GABAa()
