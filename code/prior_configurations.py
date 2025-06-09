@@ -1,5 +1,5 @@
-g_on = (-4, 1)
-p_on = (0, 0.3)
+g_on = (-2, 1)
+p_on = (0, 0.6)
 
 g_off = (-20, -20)
 p_off = (0, 0)
@@ -13,10 +13,10 @@ cue_p_on = (0, 1)
 # Defaults for all priors
 #_________________________________________________________________
 def set_prior_noise(prior_dict):
-    prior_dict['noise_E_ampa_gS']['bounds'] = noise_g_on
+    prior_dict['noise_Esoma_ampa_gS']['bounds'] = noise_g_on
     prior_dict['noise_I_ampa_gS']['bounds'] = noise_g_on
 
-    prior_dict['noise_E_ampa_pconn']['bounds'] = noise_p_on
+    prior_dict['noise_Esoma_ampa_pconn']['bounds'] = noise_p_on
     prior_dict['noise_I_ampa_pconn']['bounds'] = noise_p_on
 
 def set_all_conn_off(prior_dict):

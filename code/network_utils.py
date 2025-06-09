@@ -278,7 +278,7 @@ def make_network():
 
     EE_dend_ampa_synapse = AMPA()
     EE_dend_ampa_synapse.change_name('EE_dend_ampa')
-    EE_dend_ampa_synapse = NMDA()
+    EE_dend_nmda_synapse = NMDA()
     EE_dend_nmda_synapse.change_name('EE_dend_nmda')
 
     IE_gaba_synapse = GABAa()
@@ -407,7 +407,7 @@ def set_train_parameters(net, gid_ranges):
 def get_parameter_names():
     conn_names = ["cue_Esoma_ampa", "cue_Esoma_nmda", "cue_Edend_ampa", "cue_Edend_nmda", "noise_Esoma_ampa",
                   "cue_I_ampa", "noise_I_ampa",
-                  "IE_gaba", "II_gaba", "EI_ampa", "EE_ampa", "EE_nmda", "IE_dend_gaba", "EE_dend_ampa", , "EE_dend_nmda"]
+                  "IE_gaba", "II_gaba", "EI_ampa", "EE_ampa", "EE_nmda", "IE_dend_gaba", "EE_dend_ampa", "EE_dend_nmda"]
 
     conn_g_names = [f'{name}_gS' for name in conn_names]
     conn_pconn_names = [f'{name}_pconn' for name in conn_names]
@@ -438,6 +438,7 @@ def get_prior_dict():
     # Default is cue->soma, context->dend, cell->soma+dend
     prior_dict = {
         "cue_Esoma_ampa_gS": {'bounds': (-3, -3), 'rescale_function': log_scale_forward},
+        "cue_Esoma_nmda_gS": {'bounds': (-3, -3), 'rescale_function': log_scale_forward},
         "noise_Esoma_ampa_gS": {'bounds': (-3, -3), 'rescale_function': log_scale_forward},
         "cue_I_ampa_gS": {'bounds': (-3, -3), 'rescale_function': log_scale_forward},
         "noise_I_ampa_gS": {'bounds': (-3, -3), 'rescale_function': log_scale_forward},
@@ -445,12 +446,16 @@ def get_prior_dict():
         "II_gaba_gS": {'bounds': (-9, -2), 'rescale_function': log_scale_forward},
         "EI_ampa_gS": {'bounds': (-9, -2), 'rescale_function': log_scale_forward},
         "EE_ampa_gS": {'bounds': (-9, -2), 'rescale_function': log_scale_forward},
+        "EE_nmda_gS": {'bounds': (-9, -2), 'rescale_function': log_scale_forward},
 
         "cue_Edend_ampa_gS": {'bounds': (-20, -20), 'rescale_function': log_scale_forward},
+        "cue_Edend_nmda_gS": {'bounds': (-20, -20), 'rescale_function': log_scale_forward},
         "IE_dend_gaba_gS": {'bounds': (-9, -2), 'rescale_function': log_scale_forward},
         "EE_dend_ampa_gS": {'bounds': (-9, -2), 'rescale_function': log_scale_forward},
+        "EE_dend_nmda_gS": {'bounds': (-9, -2), 'rescale_function': log_scale_forward},
         
         "cue_Esoma_ampa_pconn": {'bounds': (1.0, 1.0), 'rescale_function': linear_scale_forward},
+        "cue_Esoma_nmda_pconn": {'bounds': (1.0, 1.0), 'rescale_function': linear_scale_forward},
         "noise_Esoma_ampa_pconn": {'bounds': (1.0, 1.0), 'rescale_function': linear_scale_forward},
         "cue_I_ampa_pconn": {'bounds': (1.0, 1.0), 'rescale_function': linear_scale_forward},
         "noise_I_ampa_pconn": {'bounds': (1.0, 1.0), 'rescale_function': linear_scale_forward},
@@ -458,10 +463,13 @@ def get_prior_dict():
         "II_gaba_pconn": {'bounds': (0, 0.3), 'rescale_function': linear_scale_forward},
         "EI_ampa_pconn": {'bounds': (0, 0.3), 'rescale_function': linear_scale_forward},
         "EE_ampa_pconn": {'bounds': (0, 0.3), 'rescale_function': linear_scale_forward},
+        "EE_nmda_pconn": {'bounds': (0, 0.3), 'rescale_function': linear_scale_forward},
 
         "cue_Edend_ampa_pconn": {'bounds': (0.0, 0.0), 'rescale_function': linear_scale_forward},
+        "cue_Edend_nmda_pconn": {'bounds': (0.0, 0.0), 'rescale_function': linear_scale_forward},
         "IE_dend_gaba_pconn": {'bounds': (0, 0.3), 'rescale_function': linear_scale_forward},
         "EE_dend_ampa_pconn": {'bounds': (0, 0.3), 'rescale_function': linear_scale_forward},
+        "EE_dend_nmda_pconn": {'bounds': (0, 0.3), 'rescale_function': linear_scale_forward},
 
         "E_Leak_gLeak": {'bounds': (-9, -2), 'rescale_function': log_scale_forward},
         "E_dend_Leak_gLeak": {'bounds': (-9, -2), 'rescale_function': log_scale_forward},
@@ -577,10 +585,8 @@ def get_currents_nocontext(inputs, gid_ranges, t_max=500, dt=0.025):
 
     cue_currents = jnp.asarray(cue_currents * stim_scaling)
 
-    # context currents
-    context_currents = np.zeros((len(gid_ranges['context']), len(time_vec)))
-
+    # set target
     target = jnp.zeros((3, len(time_vec) + 1))
     target = target.at[:2, cue_start:].set(inputs[0:2].reshape(-1,1) * inputs[2])
 
-    return cue_currents, context_currents, target
+    return cue_currents, target

@@ -53,7 +53,7 @@ def get_config_list():
         ]
     return config_list
 
-def simulate_sweep(theta, params, cue_currents, context_currents, seed):
+def simulate_sweep(theta, params, cue_currents, seed):
     seed_key = jax.random.split(jax.random.PRNGKey(seed), num=4)
     rng = np.random.default_rng(seed=123)
 
@@ -93,8 +93,8 @@ def simulate_sweep(theta, params, cue_currents, context_currents, seed):
     
     noise_scale = 0.06
 
-    noise_E_shape = (len(net.cell(list(gid_ranges['noise_E'])).nodes), cue_currents.shape[1])
-    noise_I_shape = (len(net.cell(list(gid_ranges['noise_I'])).nodes), cue_currents.shape[1])
+    noise_E_shape = (len(list(gid_ranges['noise_E'])), cue_currents.shape[1])
+    noise_I_shape = (len(list(gid_ranges['noise_I'])), cue_currents.shape[1])
 
     noise_E = jax.random.normal(key=seed_key[0], shape=noise_E_shape) * noise_scale
     noise_I = jax.random.normal(key=seed_key[1], shape=noise_I_shape) * noise_scale
@@ -146,8 +146,6 @@ if __name__ == "__main__":
     prior_dict = get_prior_dict()
     update_prior_dict(prior_dict)
 
-
-
     net, gid_ranges = make_network()
     with open(f'{data_path}/jaxley_net.pkl', 'wb') as f:
         pickle.dump((net, gid_ranges),f)
@@ -175,16 +173,14 @@ if __name__ == "__main__":
 
     input_data = [get_currents_nocontext(input_list[idx], gid_ranges, t_max, dt) for idx in range(num_cond)]
     cue_currents = jnp.stack([input_data[idx][0] for idx in range(num_cond)])
-    context_currents = jnp.stack([input_data[idx][1] for idx in range(num_cond)])
 
-    targets_list = np.array([input_data[idx][2][:2, burn_in::downsample_factor] for idx in range(num_cond)])
+    targets_list = np.array([input_data[idx][1][:2, burn_in::downsample_factor] for idx in range(num_cond)])
 
     cue_currents_batch = jnp.tile(cue_currents, (batch_size, 1, 1))
-    context_currents_batch = jnp.tile(context_currents, (batch_size, 1, 1))
     print(cue_currents_batch.shape)
 
     jitted_simulate = jit(simulate_sweep)
-    jitted_vmapped_simulate = vmap(jitted_simulate, in_axes=(0, None, 0, 0, 0))
+    jitted_vmapped_simulate = vmap(jitted_simulate, in_axes=(0, None, 0, 0))
 
     # Set up SBI objects
     prior = UniformPrior(parameters=list(prior_dict.keys()))
@@ -211,7 +207,7 @@ if __name__ == "__main__":
             theta_batch = jnp.repeat(theta_batch, num_cond, axis=0)
 
             seed_batch = jnp.arange(start_idx*num_cond, end_idx*num_cond)
-            output = np.array(jitted_vmapped_simulate(theta_batch, params, cue_currents_batch, context_currents_batch, seed_batch))
+            output = np.array(jitted_vmapped_simulate(theta_batch, params, cue_currents_batch, seed_batch))
             output = output[:, :, burn_in::downsample_factor]
 
             # Loop over each unique parameter set (theta)
