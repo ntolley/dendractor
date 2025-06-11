@@ -42,14 +42,18 @@ def get_save_path():
 
 def get_config_list():
     config_list = [
-        ('cuesomaampa_Esomaampa_Edendnmda', prior_config.update_prior_dict_cuesomaampa_Esomaampa_Edendnmda), # 0
-        ('cuesomaampa_Esomanmda_Edendampa', prior_config.update_prior_dict_cuesomaampa_Esomanmda_Edendampa), # 1
-        ('cuesomanmda_Esomaampa_Edendnmda', prior_config.update_prior_dict_cuesomanmda_Esomaampa_Edendnmda), # 2
-        ('cuesomanmda_Esomanmda_Edendampa', prior_config.update_prior_dict_cuesomanmda_Esomanmda_Edendampa), # 3
-        ('cuedendampa_Esomaampa_Edendnmda', prior_config.update_prior_dict_cuedendampa_Esomaampa_Edendnmda), # 4
-        ('cuedendampa_Esomanmda_Edendampa', prior_config.update_prior_dict_cuedendampa_Esomanmda_Edendampa), # 5
-        ('cuedendnmda_Esomaampa_Edendnmda', prior_config.update_prior_dict_cuedendnmda_Esomaampa_Edendnmda), # 6
-        ('cuedendnmda_Esomanmda_Edendampa', prior_config.update_prior_dict_cuedendnmda_Esomanmda_Edendampa), # 7
+        # ('cuesomaampa_Esomaampa_Edendnmda', prior_config.update_prior_dict_cuesomaampa_Esomaampa_Edendnmda), # 0
+        # ('cuesomaampa_Esomanmda_Edendampa', prior_config.update_prior_dict_cuesomaampa_Esomanmda_Edendampa), # 1
+        # ('cuesomanmda_Esomaampa_Edendnmda', prior_config.update_prior_dict_cuesomanmda_Esomaampa_Edendnmda), # 2
+        # ('cuesomanmda_Esomanmda_Edendampa', prior_config.update_prior_dict_cuesomanmda_Esomanmda_Edendampa), # 3
+        ('cuesomanmda_Esomaampa_Edendampa', prior_config.update_prior_dict_cuesomanmda_Esomaampa_Edendampa), # 4
+        ('cuesomaampa_Esomaampa_Edendampa', prior_config.update_prior_dict_cuesomaampa_Esomaampa_Edendampa), # 5
+        # ('cuedendampa_Esomaampa_Edendnmda', prior_config.update_prior_dict_cuedendampa_Esomaampa_Edendnmda), # 6
+        # ('cuedendampa_Esomanmda_Edendampa', prior_config.update_prior_dict_cuedendampa_Esomanmda_Edendampa), # 7
+        # ('cuedendnmda_Esomaampa_Edendnmda', prior_config.update_prior_dict_cuedendnmda_Esomaampa_Edendnmda), # 8
+        # ('cuedendnmda_Esomanmda_Edendampa', prior_config.update_prior_dict_cuedendnmda_Esomanmda_Edendampa), # 9
+        ('cuedendnmda_Esomaampa_Edendampa', prior_config.update_prior_dict_cuedendnmda_Esomaampa_Edendampa), # 10
+        ('cuedendampa_Esomaampa_Edendampa', prior_config.update_prior_dict_cuedendampa_Esomaampa_Edendampa), # 11
         ]
     return config_list
 

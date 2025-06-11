@@ -118,6 +118,13 @@ def set_prior_Esomanmda_Edendampa(prior_dict):
     prior_dict['EE_dend_ampa_gS']['bounds'] = g_on
     prior_dict['EE_dend_ampa_pconn']['bounds'] = p_on
 
+def set_prior_Esomaampa_Edendampa(prior_dict):
+    prior_dict['EE_ampa_gS']['bounds'] = g_on
+    prior_dict['EE_ampa_pconn']['bounds'] = p_on
+
+    prior_dict['EE_dend_ampa_gS']['bounds'] = g_on
+    prior_dict['EE_dend_ampa_pconn']['bounds'] = p_on
+
 #________________________________________________________________
 
 
@@ -141,6 +148,16 @@ def update_prior_dict_cuesomanmda_Esomanmda_Edendampa(prior_dict):
     set_prior_cuesomanmda(prior_dict)
     set_prior_Esomanmda_Edendampa(prior_dict)
 
+def update_prior_dict_cuesomanmda_Esomaampa_Edendampa(prior_dict):
+    initalize_prior_dict(prior_dict)
+    set_prior_cuesomanmda(prior_dict)
+    set_prior_Esomaampa_Edendampa(prior_dict)
+
+def update_prior_dict_cuesomaampa_Esomaampa_Edendampa(prior_dict):
+    initalize_prior_dict(prior_dict)
+    set_prior_cuesomaampa(prior_dict)
+    set_prior_Esomaampa_Edendampa(prior_dict)
+
 def update_prior_dict_cuedendampa_Esomaampa_Edendnmda(prior_dict):
     initalize_prior_dict(prior_dict)
     set_prior_cuedendampa(prior_dict)
@@ -161,9 +178,15 @@ def update_prior_dict_cuedendnmda_Esomanmda_Edendampa(prior_dict):
     set_prior_cuedendnmda(prior_dict)
     set_prior_Esomanmda_Edendampa(prior_dict)
 
+def update_prior_dict_cuedendnmda_Esomaampa_Edendampa(prior_dict):
+    initalize_prior_dict(prior_dict)
+    set_prior_cuedendnmda(prior_dict)
+    set_prior_Esomaampa_Edendampa(prior_dict)
 
-
-
+def update_prior_dict_cuedendampa_Esomaampa_Edendampa(prior_dict):
+    initalize_prior_dict(prior_dict)
+    set_prior_cuedendampa(prior_dict)
+    set_prior_Esomaampa_Edendampa(prior_dict)
 
 
 

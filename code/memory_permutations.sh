@@ -6,7 +6,7 @@
 #SBATCH --mem=300G
 #SBATCH --account carney-sjones-condo
 #SBATCH -p gpu --gres=gpu:1
-#SBATCH --array=0-7
+#SBATCH --array=0-3
 
 # Specify an output file
 #SBATCH -o /users/ntolley/data/ntolley/dendractor/memory_permutations/job_out/memory_permutations-%j.out
