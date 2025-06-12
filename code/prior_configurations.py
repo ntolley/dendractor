@@ -83,6 +83,12 @@ def initalize_prior_dict(prior_dict):
     set_prior_noise(prior_dict)
     set_prior_inhibitory_network(prior_dict)
 
+# Special manipulations
+#______________________
+def set_prior_nocalcium(prior_dict):
+    prior_dict['E_dend_CaL_gCaL']['bounds'] = g_off
+    prior_dict['E_dend_CaT_gCaT']['bounds'] = g_off
+
 #____________________________________________________________________
 
 # Different variants of cue prior
@@ -126,7 +132,7 @@ def set_prior_Esomaampa_Edendampa(prior_dict):
     prior_dict['EE_dend_ampa_pconn']['bounds'] = p_on
 
 #________________________________________________________________
-
+# Variations on NMDA/AMP synapses for extrinsic and intrinsic connections
 
 def update_prior_dict_cuesomaampa_Esomaampa_Edendnmda(prior_dict):
     initalize_prior_dict(prior_dict)
@@ -188,6 +194,20 @@ def update_prior_dict_cuedendampa_Esomaampa_Edendampa(prior_dict):
     set_prior_cuedendampa(prior_dict)
     set_prior_Esomaampa_Edendampa(prior_dict)
 
+#________________________________________________________________
+# Remove calcium for variations on extrinsic NMDA
+def update_prior_dict_cuesomanmda_Esomaampa_Edendampa_nocalcium(prior_dict):
+    update_prior_dict_cuesomanmda_Esomaampa_Edendampa(prior_dict)
+    set_prior_nocalcium(prior_dict)
 
+def update_prior_dict_cuesomaampa_Esomaampa_Edendampa_nocalcium(prior_dict):
+    update_prior_dict_cuesomaampa_Esomaampa_Edendampa(prior_dict)
+    set_prior_nocalcium(prior_dict)
 
+def update_prior_dict_cuedendnmda_Esomaampa_Edendampa_nocalcium(prior_dict):
+    update_prior_dict_cuedendnmda_Esomaampa_Edendampa(prior_dict)
+    set_prior_nocalcium(prior_dict)
 
+def update_prior_dict_cuedendampa_Esomaampa_Edendampa_nocalcium(prior_dict):
+    update_prior_dict_cuedendampa_Esomaampa_Edendampa(prior_dict)
+    set_prior_nocalcium(prior_dict)
