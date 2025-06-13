@@ -36,8 +36,8 @@ from neurodsp.spectral import compute_spectrum
 import prior_configurations as prior_config
 
 def get_save_path():
-    save_path = '/users/ntolley/data/ntolley/dendractor/memory_permutations'
-
+    # save_path = '/users/ntolley/data/ntolley/dendractor/memory_permutations'
+    save_path = '/users/ntolley/data/ntolley/dendractor/memory_permutations_long'
     return save_path
 
 def get_config_list():
@@ -47,20 +47,23 @@ def get_config_list():
         # ('cuesomaampa_Esomanmda_Edendampa', prior_config.update_prior_dict_cuesomaampa_Esomanmda_Edendampa), # 1
         # ('cuesomanmda_Esomaampa_Edendnmda', prior_config.update_prior_dict_cuesomanmda_Esomaampa_Edendnmda), # 2
         # ('cuesomanmda_Esomanmda_Edendampa', prior_config.update_prior_dict_cuesomanmda_Esomanmda_Edendampa), # 3
-        # ('cuesomanmda_Esomaampa_Edendampa', prior_config.update_prior_dict_cuesomanmda_Esomaampa_Edendampa), # 4
-        # ('cuesomaampa_Esomaampa_Edendampa', prior_config.update_prior_dict_cuesomaampa_Esomaampa_Edendampa), # 5
-        # ('cuedendampa_Esomaampa_Edendnmda', prior_config.update_prior_dict_cuedendampa_Esomaampa_Edendnmda), # 6
-        # ('cuedendampa_Esomanmda_Edendampa', prior_config.update_prior_dict_cuedendampa_Esomanmda_Edendampa), # 7
-        # ('cuedendnmda_Esomaampa_Edendnmda', prior_config.update_prior_dict_cuedendnmda_Esomaampa_Edendnmda), # 8
-        # ('cuedendnmda_Esomanmda_Edendampa', prior_config.update_prior_dict_cuedendnmda_Esomanmda_Edendampa), # 9
-        # ('cuedendnmda_Esomaampa_Edendampa', prior_config.update_prior_dict_cuedendnmda_Esomaampa_Edendampa), # 10
-        # ('cuedendampa_Esomaampa_Edendampa', prior_config.update_prior_dict_cuedendampa_Esomaampa_Edendampa), # 11
+        # ('cuedendampa_Esomaampa_Edendnmda', prior_config.update_prior_dict_cuedendampa_Esomaampa_Edendnmda), # 4
+        # ('cuedendampa_Esomanmda_Edendampa', prior_config.update_prior_dict_cuedendampa_Esomanmda_Edendampa), # 5
+        # ('cuedendnmda_Esomaampa_Edendnmda', prior_config.update_prior_dict_cuedendnmda_Esomaampa_Edendnmda), # 6
+        # ('cuedendnmda_Esomanmda_Edendampa', prior_config.update_prior_dict_cuedendnmda_Esomanmda_Edendampa), # 7
 
-        # No calcium variations
-        ('cuesomanmda_Esomaampa_Edendampa_nocalcium', prior_config.update_prior_dict_cuesomanmda_Esomaampa_Edendampa_nocalcium), # 12
+        ('cuedendnmda_Esomaampa_Edendampa', prior_config.update_prior_dict_cuedendnmda_Esomaampa_Edendampa), # 8
+        ('cuedendnmda_Esomaampa_Edendampa_nocalcium', prior_config.update_prior_dict_cuedendnmda_Esomaampa_Edendampa_nocalcium), # 9
+
+        ('cuesomanmda_Esomaampa_Edendampa', prior_config.update_prior_dict_cuesomanmda_Esomaampa_Edendampa), # 10
+        ('cuesomanmda_Esomaampa_Edendampa_nocalcium', prior_config.update_prior_dict_cuesomanmda_Esomaampa_Edendampa_nocalcium), # 11
+
+        ('cuesomaampa_Esomaampa_Edendampa', prior_config.update_prior_dict_cuesomaampa_Esomaampa_Edendampa), # 12
         ('cuesomaampa_Esomaampa_Edendampa_nocalcium', prior_config.update_prior_dict_cuesomaampa_Esomaampa_Edendampa_nocalcium), # 13
-        ('cuedendnmda_Esomaampa_Edendampa_nocalcium', prior_config.update_prior_dict_cuedendnmda_Esomaampa_Edendampa_nocalcium), # 14
+
+        ('cuedendampa_Esomaampa_Edendampa', prior_config.update_prior_dict_cuedendampa_Esomaampa_Edendampa), # 14
         ('cuedendampa_Esomaampa_Edendampa_nocalcium', prior_config.update_prior_dict_cuedendampa_Esomaampa_Edendampa_nocalcium), # 15
+
         ]
 
     return config_list
@@ -147,7 +150,7 @@ if __name__ == "__main__":
     os.makedirs(f'{data_path}/tmp', exist_ok=True)
 
     dt = 0.025
-    t_max = 1000
+    t_max = 2000
     time_vec = jnp.arange(0, t_max, dt)
 
     # Number of samples before calculating error
