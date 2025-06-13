@@ -86,11 +86,18 @@ def initalize_prior_dict(prior_dict):
 # Special manipulations
 #______________________
 def set_prior_nocalcium(prior_dict):
-    prior_dict['E_dend_CaL_gCaL']['bounds'] = g_off
-    prior_dict['E_dend_CaT_gCaT']['bounds'] = g_off
-
     prior_dict['E_CaL_gCaL']['bounds'] = g_off
     prior_dict['E_CaT_gCaT']['bounds'] = g_off
+    prior_dict['E_Km_gKm']['bounds'] = g_off
+
+    prior_dict['E_dend_CaL_gCaL']['bounds'] = g_off
+    prior_dict['E_dend_CaT_gCaT']['bounds'] = g_off
+    prior_dict['E_dend_Km_gKm']['bounds'] = g_off
+
+    prior_dict['I_CaL_gCaL']['bounds'] = g_off
+    prior_dict['I_CaT_gCaT']['bounds'] = g_off
+    prior_dict['I_Km_gKm']['bounds'] = g_off
+
 
 #____________________________________________________________________
 
