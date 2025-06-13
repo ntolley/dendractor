@@ -50,18 +50,18 @@ if __name__ == "__main__":
 
 
     config_names = [
-        'cuesomaampa_Esomaampa_Edendnmda',
-        'cuesomaampa_Esomanmda_Edendampa',
-        'cuesomanmda_Esomaampa_Edendnmda',
-        'cuesomanmda_Esomanmda_Edendampa',
-        # 'cuesomanmda_Esomaampa_Edendampa', 
-        # 'cuesomaampa_Esomaampa_Edendampa', 
-        'cuedendampa_Esomaampa_Edendnmda',
-        'cuedendampa_Esomanmda_Edendampa',
-        'cuedendnmda_Esomaampa_Edendnmda',
-        'cuedendnmda_Esomanmda_Edendampa',
-        # 'cuedendnmda_Esomaampa_Edendampa',
-        # 'cuedendampa_Esomaampa_Edendampa',
+        # 'cuesomaampa_Esomaampa_Edendnmda',
+        # 'cuesomaampa_Esomanmda_Edendampa',
+        # 'cuesomanmda_Esomaampa_Edendnmda',
+        # 'cuesomanmda_Esomanmda_Edendampa',
+        'cuesomanmda_Esomaampa_Edendampa', 
+        'cuesomaampa_Esomaampa_Edendampa', 
+        # 'cuedendampa_Esomaampa_Edendnmda',
+        # 'cuedendampa_Esomanmda_Edendampa',
+        # 'cuedendnmda_Esomaampa_Edendnmda',
+        # 'cuedendnmda_Esomanmda_Edendampa',
+        'cuedendnmda_Esomaampa_Edendampa',
+        'cuedendampa_Esomaampa_Edendampa',
         ]
 
     input_names = ['(-1,-1)', '(1,1)', '(-1,1)', '(1,-1)']

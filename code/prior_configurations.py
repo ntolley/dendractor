@@ -89,6 +89,9 @@ def set_prior_nocalcium(prior_dict):
     prior_dict['E_dend_CaL_gCaL']['bounds'] = g_off
     prior_dict['E_dend_CaT_gCaT']['bounds'] = g_off
 
+    prior_dict['E_CaL_gCaL']['bounds'] = g_off
+    prior_dict['E_CaT_gCaT']['bounds'] = g_off
+
 #____________________________________________________________________
 
 # Different variants of cue prior
