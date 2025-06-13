@@ -177,7 +177,7 @@ if __name__ == "__main__":
     num_iter = 5000
 
     batch_size = 10
-    num_repeats = 5
+    num_repeats = 2
 
 
     input_list = jnp.array([[-2,-2,1], [2,2,1], [-2, 2,1], [2,-2,1]])
