@@ -565,9 +565,6 @@ def get_currents_nocontext(inputs, gid_ranges, t_max=500, dt=0.025):
 
     cue_amplitudes = gaussian_tuning(inputs[0:2], cue_tuning, cue_sigma)
     cue_amplitudes = (np.sum(cue_amplitudes, axis=1) / cue_tuning_denom).reshape(-1, 1)
-    baseline_amplitudes = gaussian_tuning(np.array([0.0, 0.0]), cue_tuning, cue_sigma)
-    baseline_amplitudes = (np.sum(baseline_amplitudes, axis=1) / cue_tuning_denom).reshape(-1, 1)
-
 
     # Define input start/stop times
     stim_len = 1000
@@ -576,9 +573,6 @@ def get_currents_nocontext(inputs, gid_ranges, t_max=500, dt=0.025):
     cue_start = 10000
     cue_stop = cue_start + stim_len
 
-    context_start = 10000
-    context_stop = context_start + stim_len
-
     # cue currents
     cue_currents = np.zeros((len(gid_ranges['cue']), len(time_vec)))
     cue_currents[:, cue_start:cue_stop] = cue_amplitudes
@@ -586,7 +580,57 @@ def get_currents_nocontext(inputs, gid_ranges, t_max=500, dt=0.025):
     cue_currents = jnp.asarray(cue_currents * stim_scaling)
 
     # set target
-    target = jnp.zeros((3, len(time_vec) + 1))
-    target = target.at[:2, cue_start:].set(inputs[0:2].reshape(-1,1) * inputs[2])
+    target = jnp.zeros((2, len(time_vec) + 1))
+    target = target.at[:, cue_start:].set(inputs[0:2].reshape(-1,1))
 
     return cue_currents, target
+
+def get_currents_dms(inputs, gid_ranges, t_max=500, dt=0.025):
+    """Stimulation currents for delayed match to sample task"""
+    time_vec = jnp.arange(0, t_max, dt)
+    
+    cue_rng = np.random.default_rng(12345)
+
+    # calculate cue amplitudes
+    cue_dim = 1
+    cue_tuning = cue_rng.uniform(-3, 3, (len(gid_ranges['cue']), cue_dim))
+    cue_sigma = np.array(0.3)
+    cue_tuning_denom = gaussian_tuning(0, 0, cue_sigma) * cue_dim # ensures input intensity equals 1
+
+
+    cue1_amplitudes = gaussian_tuning(inputs[0], cue_tuning, cue_sigma)
+    cue1_amplitudes = (np.sum(cue1_amplitudes, axis=1) / cue_tuning_denom).reshape(-1, 1)
+
+    cue2_amplitudes = gaussian_tuning(inputs[1], cue_tuning, cue_sigma)
+    cue2_amplitudes = (np.sum(cue2_amplitudes, axis=1) / cue_tuning_denom).reshape(-1, 1)
+
+
+    # Define input start/stop times
+    stim_len = 1000
+    stim_scaling = 0.1
+
+    cue1_start = 8000
+    cue1_stop = cue1_start + stim_len
+
+    cue2_start = 32000
+    cue2_stop = cue2_start + stim_len
+
+
+    # cue currents
+    cue_currents = np.zeros((len(gid_ranges['cue']), len(time_vec)))
+    cue_currents[:, cue1_start:cue1_stop] = cue1_amplitudes
+    cue_currents[:, cue2_start:cue2_stop] = cue2_amplitudes
+
+    cue_currents = jnp.asarray(cue_currents * stim_scaling)
+
+    # set target
+    if inputs[0] == inputs[1]:
+        target_val = 1
+    else:
+        target_val = -1
+
+    target = jnp.zeros((1, len(time_vec) + 1))
+    target = target.at[:, cue2_start:].set(target_val)
+
+    return cue_currents, target
+    

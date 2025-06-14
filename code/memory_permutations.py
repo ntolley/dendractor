@@ -27,7 +27,7 @@ from sbi.inference import NPE
 from sbi.utils import RestrictedPrior, get_density_thresholder
 from tqdm import tqdm
 
-from network_utils import (make_network, set_train_parameters, get_currents_nocontext, log_scale_forward, linear_scale_forward,
+from network_utils import (make_network, set_train_parameters, get_currents_nocontext, get_currents_dms, log_scale_forward, linear_scale_forward,
                            get_prior_dict, initialize_params, get_parameter_names)
 from flow_utils import UniformPrior, PriorFiltered
 from sklearn.linear_model import LinearRegression, Ridge
@@ -37,7 +37,7 @@ import prior_configurations as prior_config
 
 def get_save_path():
     # save_path = '/users/ntolley/data/ntolley/dendractor/memory_permutations'
-    save_path = '/users/ntolley/data/ntolley/dendractor/memory_permutations_long'
+    save_path = '/users/ntolley/data/ntolley/dendractor/memory_permutations_dms'
     return save_path
 
 def get_config_list():
@@ -150,11 +150,12 @@ if __name__ == "__main__":
     os.makedirs(f'{data_path}/tmp', exist_ok=True)
 
     dt = 0.025
-    t_max = 2000
+    t_max = 1000
     time_vec = jnp.arange(0, t_max, dt)
 
     # Number of samples before calculating error
-    burn_in = 10_000
+    # burn_in = 10_000 # use for memory
+    burn_in = 24_000 # use for dms
 
     downsample_factor = 10
 
@@ -177,19 +178,23 @@ if __name__ == "__main__":
     num_iter = 5000
 
     batch_size = 10
-    num_repeats = 2
+    num_repeats = 5
 
 
-    input_list = jnp.array([[-2,-2,1], [2,2,1], [-2, 2,1], [2,-2,1]])
+    input_list = jnp.array([[-2,-2], [2,2], [-2, 2], [2,-2]])
     num_inputs = input_list.shape[0]
     input_list = jnp.tile(input_list, (num_repeats, 1))
 
     num_cond = input_list.shape[0]
 
-    input_data = [get_currents_nocontext(input_list[idx], gid_ranges, t_max, dt) for idx in range(num_cond)]
+    # input_data = [get_currents_nocontext(input_list[idx], gid_ranges, t_max, dt) for idx in range(num_cond)] # use for memory
+    input_data = [get_currents_dms(input_list[idx], gid_ranges, t_max, dt) for idx in range(num_cond)] # use for dms
+
     cue_currents = jnp.stack([input_data[idx][0] for idx in range(num_cond)])
 
-    targets_list = np.array([input_data[idx][1][:2, burn_in::downsample_factor] for idx in range(num_cond)])
+    # targets_list = np.array([input_data[idx][1][:2, burn_in::downsample_factor] for idx in range(num_cond)]) # use for memory
+    targets_list = np.array([input_data[idx][1][:, burn_in::downsample_factor] for idx in range(num_cond)]) # use for dms
+
 
     cue_currents_batch = jnp.tile(cue_currents, (batch_size, 1, 1))
     print(cue_currents_batch.shape)
@@ -255,7 +260,8 @@ if __name__ == "__main__":
 
                     # Calculate mean output of network
                     y_pred_cond = [np.mean(model.predict(x_val_cond.T), axis=0) for x_val_cond in x_list[val_mask]]
-                    temp_y_pred_list.append(np.concatenate(y_pred_cond))
+                    # temp_y_pred_list.append(np.concatenate(y_pred_cond)) # use for memory
+                    temp_y_pred_list.append(y_pred_cond) # use for dms
 
                 # Update with average predicted output over (vector of size (num_inputs))
                 y_pred_avg = np.mean(np.array(temp_y_pred_list), axis=0)
@@ -270,7 +276,9 @@ if __name__ == "__main__":
         np.save(f'{data_path}/flow_error_{flow_idx}.npy', error_list)
 
         # Heavily penalize chance level predictions
-        y_pred_mask = np.mean(np.abs(y_pred_list), axis=1) < 0.2
+        # y_pred_mask = np.mean(np.abs(y_pred_list), axis=1) < 0.2 # use for memory
+        y_pred_mask = np.mean(np.abs(y_pred_list), axis=1) < 0.2 # use for dms
+
         error_list[y_pred_mask] += 1e3
         print(f'{np.sum(y_pred_mask)} null simulations')
 
