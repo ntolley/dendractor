@@ -155,7 +155,7 @@ if __name__ == "__main__":
 
     # Number of samples before calculating error
     # burn_in = 10_000 # use for memory
-    burn_in = 24_000 # use for dms
+    burn_in = 32_000 # use for dms
 
     downsample_factor = 10
 
@@ -301,16 +301,20 @@ if __name__ == "__main__":
 
 
         # Filter theta using feature masks, take top simulations that separate inputs
-        proposal = PriorFiltered(parameters=list(prior_dict.keys()))
-        optimizer = optim.Adam(proposal.flow.parameters())
+        if theta_train.shape[0] < 5:
+            print('Too few passing sims, reusing same distribution')
 
-        # Train flow
-        num_iter = 5000
-        for i in tqdm(range(num_iter)):
-            optimizer.zero_grad()
-            loss = -proposal.flow.log_prob(inputs=theta_train).mean()
-            loss.backward()
-            optimizer.step()
+        else:
+            proposal = PriorFiltered(parameters=list(prior_dict.keys()))
+            optimizer = optim.Adam(proposal.flow.parameters())
+
+            # Train flow
+            num_iter = 5000
+            for i in tqdm(range(num_iter)):
+                optimizer.zero_grad()
+                loss = -proposal.flow.log_prob(inputs=theta_train).mean()
+                loss.backward()
+                optimizer.step()
         state_dict = proposal.flow.state_dict()
         joblib.dump(state_dict, f'{data_path}/prior_filtered_flow_{flow_idx}.pkl')
 

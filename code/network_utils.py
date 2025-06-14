@@ -625,9 +625,9 @@ def get_currents_dms(inputs, gid_ranges, t_max=500, dt=0.025):
 
     # set target
     if inputs[0] == inputs[1]:
-        target_val = 1
+        target_val = 2
     else:
-        target_val = -1
+        target_val = -2
 
     target = jnp.zeros((1, len(time_vec) + 1))
     target = target.at[:, cue2_start:].set(target_val)
