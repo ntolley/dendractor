@@ -84,16 +84,32 @@ def simulate_sweep(theta, params, cue_currents, seed):
     
     noise_scale = 0.06
 
+    noise_E_shape = (len(list(gid_ranges['noise_E'])), cue_currents.shape[1])
+    noise_I_shape = (len(list(gid_ranges['noise_I'])), cue_currents.shape[1])
+
+    noise_E = jax.random.normal(key=seed_key[0], shape=noise_E_shape) * noise_scale
+    noise_I = jax.random.normal(key=seed_key[1], shape=noise_I_shape) * noise_scale
 
     # Attach stimulation
     data_stimuli = None
     data_stimuli = net.cell(list(gid_ranges['cue'])).branch(0).comp(0).data_stimulate(cue_currents, data_stimuli=data_stimuli)
+    data_stimuli = net.cell(list(gid_ranges['noise_E'])).branch(0).comp(0).data_stimulate(noise_E, data_stimuli=data_stimuli)
+    data_stimuli = net.cell(list(gid_ranges['noise_I'])).branch(0).comp(0).data_stimulate(noise_I, data_stimuli=data_stimuli)
+
+
+    vmin, vmax = -80, -40
+    E_voltages = jax.random.uniform(key=seed_key[2], minval=vmin, maxval=vmax, shape=(len(net.cell(list(gid_ranges['E'])).nodes),))
+    I_voltages = jax.random.uniform(key=seed_key[3], minval=vmin, maxval=vmax, shape=(len(net.cell(list(gid_ranges['I'])).nodes),))
+
+    param_state = None
+    param_state = net.cell(list(gid_ranges['E'])).data_set('v', E_voltages, param_state)
+    param_state = net.cell(list(gid_ranges['I'])).data_set('v', I_voltages, param_state)
 
 
     net.delete_recordings()
-    net.cell(list(gid_ranges['E'])).branch([0,1,2,3]).comp([0,1,2,3]).record('v')
+    net.cell(list(gid_ranges['E_rate'])).branch(0).comp(0).record('v')
 
-    s = jx.integrate(net, t_max=t_max, params=params, data_stimuli=data_stimuli, delta_t=dt)
+    s = jx.integrate(net, t_max=t_max, params=params, data_stimuli=data_stimuli, param_state=param_state, delta_t=dt)
     return s
 
 def get_opt_data(data_path):
