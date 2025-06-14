@@ -190,10 +190,6 @@ if __name__ == "__main__":
         update_prior_dict(prior_dict)
 
         input_list = jnp.array([[-2,-2,1], [2,2,1], [-2, 2,1], [2,-2,1]])
-        # angle = np.linspace(0, (7/4)*np.pi, 8)
-        # pos_x = np.cos(angle) * 2
-        # pos_y = np.sin(angle) * 2
-        # input_list = jnp.array([[x, y, 1] for (x, y) in zip(pos_x, pos_y)])
 
         num_cond = input_list.shape[0]
         input_data = [get_currents_nocontext(input_list[idx], gid_ranges, t_max, dt) for idx in range(num_cond)]

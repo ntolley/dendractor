@@ -27,8 +27,8 @@ from sbi.inference import NPE
 from sbi.utils import RestrictedPrior, get_density_thresholder
 from tqdm import tqdm
 
-from network_utils import (make_network, set_train_parameters, get_currents_nocontext, get_currents_dms, log_scale_forward, linear_scale_forward,
-                           get_prior_dict, initialize_params, get_parameter_names)
+from network_utils import (make_network, make_network_dms, set_train_parameters, get_currents_nocontext, get_currents_dms,
+                           log_scale_forward, linear_scale_forward, get_prior_dict, initialize_params, get_parameter_names)
 from flow_utils import UniformPrior, PriorFiltered
 from sklearn.linear_model import LinearRegression, Ridge
 
@@ -162,7 +162,8 @@ if __name__ == "__main__":
     prior_dict = get_prior_dict()
     update_prior_dict(prior_dict)
 
-    net, gid_ranges = make_network()
+    # net, gid_ranges = make_network() # use for memeory
+    net, gid_ranges = make_network_dms() # use for dms
     with open(f'{data_path}/jaxley_net.pkl', 'wb') as f:
         pickle.dump((net, gid_ranges),f)
 
