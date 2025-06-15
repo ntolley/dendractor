@@ -107,7 +107,7 @@ def simulate_sweep(theta, params, cue_currents, seed):
 
 
     net.delete_recordings()
-    net.cell(list(gid_ranges['E_rate'])).branch(0).comp(0).record('v')
+    net.cell(list(gid_ranges['E'])).branch([0,1,2,3]).comp([0,1,2,3]).record('v')
 
     s = jx.integrate(net, t_max=t_max, params=params, data_stimuli=data_stimuli, param_state=param_state, delta_t=dt)
     return s
