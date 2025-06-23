@@ -524,7 +524,7 @@ def make_network_dms():
     exp_synapse.change_name('exp_synapse')
 
     #  ******* CLUSTERED CONNECTIVITY *********
-    k = 10  # number of neighbors
+    k = 5  # number of neighbors
 
     E_indices, I_indices = np.arange(num_E_cells), np.arange(num_I_cells) * (num_E_cells // num_I_cells)
     # E->I soma
@@ -632,6 +632,13 @@ def set_train_parameters(net, gid_ranges):
     net.make_trainable("I_CaL_gCaL")
     net.make_trainable("I_CaT_gCaT")
 
+    net.make_trainable('cue_Edend_nmda_alpha')
+    net.make_trainable('cue_Edend_nmda_beta')
+    net.make_trainable('cue_Edend_ampa_alpha')
+    net.make_trainable('cue_Edend_ampa_beta')
+
+    net.cell(list(gid_ranges['E'])).make_trainable('axial_resistivity')
+
     parameters = net.get_parameters()
 
     return parameters, None
@@ -647,7 +654,9 @@ def get_parameter_names():
     biophysics_names = ["E_Leak_gLeak", "E_dend_Leak_gLeak", "I_Leak_gLeak",
                        "E_Km_gKm", "E_CaL_gCaL", "E_CaT_gCaT",
                        "I_Km_gKm", "I_CaL_gCaL", "I_CaT_gCaT",
-                       "E_dend_Km_gKm", "E_dend_CaL_gCaL", "E_dend_CaT_gCaT"]
+                       "E_dend_Km_gKm", "E_dend_CaL_gCaL", "E_dend_CaT_gCaT",
+                       'cue_Edend_nmda_alpha', 'cue_Edend_nmda_beta', 'cue_Edend_ampa_alpha', 'cue_Edend_ampa_beta',
+                       'axial_resistivity']
 
     key_order = conn_g_names + conn_pconn_names + biophysics_names
 
@@ -704,7 +713,15 @@ def get_prior_dict():
 
         "E_dend_Km_gKm": {'bounds': (-9, -2), 'rescale_function': log_scale_forward},
         "E_dend_CaL_gCaL": {'bounds': (-9, -2), 'rescale_function': log_scale_forward},
-        "E_dend_CaT_gCaT": {'bounds': (-9, -2), 'rescale_function': log_scale_forward},    
+        "E_dend_CaT_gCaT": {'bounds': (-9, -2), 'rescale_function': log_scale_forward},
+
+        "cue_Edend_nmda_alpha": {'bounds': (0.072, 0.072), 'rescale_function': linear_scale_forward},
+        "cue_Edend_nmda_beta": {'bounds': (0.0066, 0.0066), 'rescale_function': linear_scale_forward},
+        "cue_Edend_ampa_alpha": {'bounds': (1.1, 1.1), 'rescale_function': linear_scale_forward},
+        "cue_Edend_ampa_beta": {'bounds': (0.19, 0.19), 'rescale_function': linear_scale_forward},
+
+        "axial_resistivity": {'bounds': (300.0, 300.0), 'rescale_function': linear_scale_forward},
+
         }
     
     return prior_dict
@@ -829,10 +846,10 @@ def get_currents_dms(inputs, gid_ranges, t_max=500, dt=0.025):
     stim_len = 1000
     stim_scaling = 0.1
 
-    cue1_start = 8000
+    cue1_start = 5000
     cue1_stop = cue1_start + stim_len
 
-    cue2_start = 32000
+    cue2_start = 15000
     cue2_stop = cue2_start + stim_len
 
 

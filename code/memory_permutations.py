@@ -37,33 +37,21 @@ import prior_configurations as prior_config
 
 def get_save_path():
     # save_path = '/users/ntolley/data/ntolley/dendractor/memory_permutations'
-    save_path = '/users/ntolley/data/ntolley/dendractor/memory_permutations_dms'
+    # save_path = '/users/ntolley/data/ntolley/dendractor/memory_permutations_dms'
+    save_path = '/users/ntolley/data/ntolley/dendractor/memory_permutations_receptor_dynamics'
     return save_path
 
 def get_config_list():
     config_list = [
         # Extrinsic and intrinsic NMDA variations
-        # ('cuesomaampa_Esomaampa_Edendnmda', prior_config.update_prior_dict_cuesomaampa_Esomaampa_Edendnmda), # 0
-        # ('cuesomaampa_Esomanmda_Edendampa', prior_config.update_prior_dict_cuesomaampa_Esomanmda_Edendampa), # 1
-        # ('cuesomanmda_Esomaampa_Edendnmda', prior_config.update_prior_dict_cuesomanmda_Esomaampa_Edendnmda), # 2
-        # ('cuesomanmda_Esomanmda_Edendampa', prior_config.update_prior_dict_cuesomanmda_Esomanmda_Edendampa), # 3
-        # ('cuedendampa_Esomaampa_Edendnmda', prior_config.update_prior_dict_cuedendampa_Esomaampa_Edendnmda), # 4
-        # ('cuedendampa_Esomanmda_Edendampa', prior_config.update_prior_dict_cuedendampa_Esomanmda_Edendampa), # 5
-        # ('cuedendnmda_Esomaampa_Edendnmda', prior_config.update_prior_dict_cuedendnmda_Esomaampa_Edendnmda), # 6
-        # ('cuedendnmda_Esomanmda_Edendampa', prior_config.update_prior_dict_cuedendnmda_Esomanmda_Edendampa), # 7
+        ('cuedendnmdafast_Esomaampa_Edendampa', prior_config.update_prior_dict_cuedendnmdafast_Esomaampa_Edendampa),
+        ('cuedendampaslow_Esomaampa_Edendampa', prior_config.update_prior_dict_cuedendampaslow_Esomaampa_Edendampa),
+        ('cuedendampa_Esomaampa_Edendampa_lowaxialres', prior_config.update_prior_dict_cuedendampa_Esomaampa_Edendampa_lowaxialres),
 
         ('cuedendnmda_Esomaampa_Edendampa', prior_config.update_prior_dict_cuedendnmda_Esomaampa_Edendampa), # 8
-        ('cuedendnmda_Esomaampa_Edendampa_nocalcium', prior_config.update_prior_dict_cuedendnmda_Esomaampa_Edendampa_nocalcium), # 9
-
-        ('cuesomanmda_Esomaampa_Edendampa', prior_config.update_prior_dict_cuesomanmda_Esomaampa_Edendampa), # 10
-        ('cuesomanmda_Esomaampa_Edendampa_nocalcium', prior_config.update_prior_dict_cuesomanmda_Esomaampa_Edendampa_nocalcium), # 11
-
-        ('cuesomaampa_Esomaampa_Edendampa', prior_config.update_prior_dict_cuesomaampa_Esomaampa_Edendampa), # 12
-        ('cuesomaampa_Esomaampa_Edendampa_nocalcium', prior_config.update_prior_dict_cuesomaampa_Esomaampa_Edendampa_nocalcium), # 13
-
         ('cuedendampa_Esomaampa_Edendampa', prior_config.update_prior_dict_cuedendampa_Esomaampa_Edendampa), # 14
-        ('cuedendampa_Esomaampa_Edendampa_nocalcium', prior_config.update_prior_dict_cuedendampa_Esomaampa_Edendampa_nocalcium), # 15
-
+        ('cuesomanmda_Esomaampa_Edendampa', prior_config.update_prior_dict_cuesomanmda_Esomaampa_Edendampa), # 10
+        ('cuesomaampa_Esomaampa_Edendampa', prior_config.update_prior_dict_cuesomaampa_Esomaampa_Edendampa), # 12
         ]
 
     return config_list
@@ -154,16 +142,16 @@ if __name__ == "__main__":
     time_vec = jnp.arange(0, t_max, dt)
 
     # Number of samples before calculating error
-    # burn_in = 10_000 # use for memory
-    burn_in = 32_000 # use for dms
+    burn_in = 10_000 # use for memory
+    # burn_in = 15_000 # use for dms
 
     downsample_factor = 10
 
     prior_dict = get_prior_dict()
     update_prior_dict(prior_dict)
 
-    # net, gid_ranges = make_network() # use for memeory
-    net, gid_ranges = make_network_dms() # use for dms
+    net, gid_ranges = make_network() # use for memeory
+    # net, gid_ranges = make_network_dms() # use for dms
     with open(f'{data_path}/jaxley_net.pkl', 'wb') as f:
         pickle.dump((net, gid_ranges),f)
 
@@ -188,13 +176,13 @@ if __name__ == "__main__":
 
     num_cond = input_list.shape[0]
 
-    # input_data = [get_currents_nocontext(input_list[idx], gid_ranges, t_max, dt) for idx in range(num_cond)] # use for memory
-    input_data = [get_currents_dms(input_list[idx], gid_ranges, t_max, dt) for idx in range(num_cond)] # use for dms
+    input_data = [get_currents_nocontext(input_list[idx], gid_ranges, t_max, dt) for idx in range(num_cond)] # use for memory
+    # input_data = [get_currents_dms(input_list[idx], gid_ranges, t_max, dt) for idx in range(num_cond)] # use for dms
 
     cue_currents = jnp.stack([input_data[idx][0] for idx in range(num_cond)])
 
-    # targets_list = np.array([input_data[idx][1][:2, burn_in::downsample_factor] for idx in range(num_cond)]) # use for memory
-    targets_list = np.array([input_data[idx][1][:, burn_in::downsample_factor] for idx in range(num_cond)]) # use for dms
+    targets_list = np.array([input_data[idx][1][:2, burn_in::downsample_factor] for idx in range(num_cond)]) # use for memory
+    # targets_list = np.array([input_data[idx][1][:, burn_in::downsample_factor] for idx in range(num_cond)]) # use for dms
 
 
     cue_currents_batch = jnp.tile(cue_currents, (batch_size, 1, 1))
@@ -261,8 +249,9 @@ if __name__ == "__main__":
 
                     # Calculate mean output of network
                     y_pred_cond = [np.mean(model.predict(x_val_cond.T), axis=0) for x_val_cond in x_list[val_mask]]
-                    # temp_y_pred_list.append(np.concatenate(y_pred_cond)) # use for memory
-                    temp_y_pred_list.append(y_pred_cond) # use for dms
+
+                    temp_y_pred_list.append(np.concatenate(y_pred_cond)) # use for memory
+                    # temp_y_pred_list.append(y_pred_cond) # use for dms
 
                 # Update with average predicted output over (vector of size (num_inputs))
                 y_pred_avg = np.mean(np.array(temp_y_pred_list), axis=0)
@@ -277,8 +266,8 @@ if __name__ == "__main__":
         np.save(f'{data_path}/flow_error_{flow_idx}.npy', error_list)
 
         # Heavily penalize chance level predictions
-        # y_pred_mask = np.mean(np.abs(y_pred_list), axis=1) < 0.2 # use for memory
-        y_pred_mask = np.mean(np.abs(y_pred_list), axis=1) < 0.2 # use for dms
+        y_pred_mask = np.mean(np.abs(y_pred_list), axis=1) < 0.2 # use for memory
+        # y_pred_mask = np.mean(np.abs(y_pred_list), axis=1) < 0.2 # use for dms
 
         error_list[y_pred_mask] += 1e3
         print(f'{np.sum(y_pred_mask)} null simulations')

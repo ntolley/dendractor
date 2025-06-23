@@ -26,28 +26,22 @@ from sbi import utils as utils
 from tqdm import tqdm
 
 from network_utils import (make_network, set_train_parameters, get_currents_nocontext, log_scale_forward, linear_scale_forward,
-                           get_prior_dict, initialize_params, get_parameter_names)
+                           get_prior_dict, initialize_params, get_parameter_names, get_currents_dms)
 from flow_utils import UniformPrior, PriorFiltered
 from sklearn.linear_model import LinearRegression, Ridge
 
 from neurodsp.spectral import compute_spectrum
 
 import prior_configurations as prior_config
-save_path = '/users/ntolley/data/ntolley/dendractor/memory_permutations'
+# save_path = '/users/ntolley/data/ntolley/dendractor/memory_permutations'
+save_path = '/users/ntolley/data/ntolley/dendractor/memory_permutations_dms'
 
 config_list = [
-    # ('cuesomaampa_Esomaampa_Edendnmda', prior_config.update_prior_dict_cuesomaampa_Esomaampa_Edendnmda), # 0
-    # ('cuesomaampa_Esomanmda_Edendampa', prior_config.update_prior_dict_cuesomaampa_Esomanmda_Edendampa), # 1
-    # ('cuesomanmda_Esomaampa_Edendnmda', prior_config.update_prior_dict_cuesomanmda_Esomaampa_Edendnmda), # 2
-    # ('cuesomanmda_Esomanmda_Edendampa', prior_config.update_prior_dict_cuesomanmda_Esomanmda_Edendampa), # 3
-    ('cuesomanmda_Esomaampa_Edendampa', prior_config.update_prior_dict_cuesomanmda_Esomaampa_Edendampa), # 4
-    ('cuesomaampa_Esomaampa_Edendampa', prior_config.update_prior_dict_cuesomaampa_Esomaampa_Edendampa), # 5
-    # ('cuedendampa_Esomaampa_Edendnmda', prior_config.update_prior_dict_cuedendampa_Esomaampa_Edendnmda), # 6
-    # ('cuedendampa_Esomanmda_Edendampa', prior_config.update_prior_dict_cuedendampa_Esomanmda_Edendampa), # 7
-    # ('cuedendnmda_Esomaampa_Edendnmda', prior_config.update_prior_dict_cuedendnmda_Esomaampa_Edendnmda), # 8
-    # ('cuedendnmda_Esomanmda_Edendampa', prior_config.update_prior_dict_cuedendnmda_Esomanmda_Edendampa), # 9
-    ('cuedendnmda_Esomaampa_Edendampa', prior_config.update_prior_dict_cuedendnmda_Esomaampa_Edendampa), # 10
-    ('cuedendampa_Esomaampa_Edendampa', prior_config.update_prior_dict_cuedendampa_Esomaampa_Edendampa), # 11
+    # ('cuesomanmda_Esomaampa_Edendampa', prior_config.update_prior_dict_cuesomanmda_Esomaampa_Edendampa), # 4
+    # ('cuesomaampa_Esomaampa_Edendampa', prior_config.update_prior_dict_cuesomaampa_Esomaampa_Edendampa), # 5
+    # ('cuedendnmda_Esomaampa_Edendampa', prior_config.update_prior_dict_cuedendnmda_Esomaampa_Edendampa), # 10
+    # ('cuedendampa_Esomaampa_Edendampa', prior_config.update_prior_dict_cuedendampa_Esomaampa_Edendampa), # 11,
+    ('all_connections', prior_config.update_prior_dict_all_connections),
     ]
 
 
@@ -119,12 +113,11 @@ def simulate_sweep(theta, params, cue_currents, seed):
     s = jx.integrate(net, t_max=t_max, params=params, data_stimuli=data_stimuli, param_state=param_state, delta_t=dt)
     return s
 
-def get_opt_data(data_path):
+def get_opt_data(data_path, num_flows=10):
     print(f'Loading data from: {data_path}')
     theta_list = list()
     error_list = list()
 
-    num_flows = 10
     for flow_idx in range(num_flows):
         print(f'Flow {flow_idx}')
         theta = np.load(f'{data_path}/theta_{flow_idx}.npy')
@@ -151,6 +144,7 @@ if __name__ == "__main__":
     dt = 0.025
     t_max = 1000
     time_vec = jnp.arange(0, t_max, dt)
+    num_flows = 2
 
     downsample_factor = 10
 
@@ -160,7 +154,7 @@ if __name__ == "__main__":
         with open(f'{data_path}/jaxley_net.pkl', 'rb') as f:
             net, gid_ranges = pickle.load(f)
 
-        res_dict = get_opt_data(data_path)
+        res_dict = get_opt_data(data_path, num_flows=num_flows)
 
         # # Choose best from all sims
         theta = np.concatenate(res_dict['theta_list'], axis=0)
@@ -189,13 +183,19 @@ if __name__ == "__main__":
         prior_dict = get_prior_dict()
         update_prior_dict(prior_dict)
 
-        input_list = jnp.array([[-2,-2,1], [2,2,1], [-2, 2,1], [2,-2,1]])
+        input_list = jnp.array([[-2,-2], [2,2], [-2, 2], [2,-2]])
 
         num_cond = input_list.shape[0]
-        input_data = [get_currents_nocontext(input_list[idx], gid_ranges, t_max, dt) for idx in range(num_cond)]
+        # input_data = [get_currents_nocontext(input_list[idx], gid_ranges, t_max, dt) for idx in range(num_cond)] # use for memory
+        input_data = [get_currents_dms(input_list[idx], gid_ranges, t_max, dt) for idx in range(num_cond)] # use for dms
+
         cue_currents = jnp.stack([input_data[idx][0] for idx in range(num_cond)])
-        targets = np.concatenate([input_data[idx][1][:2, ::downsample_factor] for idx in range(num_cond)], axis=1).T
-        targets_stacked = jnp.stack([input_data[idx][1][:2, ::downsample_factor] for idx in range(num_cond)])
+
+        # targets_list = [input_data[idx][1][:2, ::downsample_factor] for idx in range(num_cond)] # use for memory
+        targets_list = [input_data[idx][1][:, ::downsample_factor] for idx in range(num_cond)] # use for dms
+        
+        targets = np.concatenate(targets_list, axis=1).T
+        targets_stacked = jnp.stack(targets_list)
 
         batch_size = 10
         cue_currents_batch = jnp.tile(cue_currents, (batch_size, 1, 1))
