@@ -34,14 +34,18 @@ from neurodsp.spectral import compute_spectrum
 
 import prior_configurations as prior_config
 # save_path = '/users/ntolley/data/ntolley/dendractor/memory_permutations'
-save_path = '/users/ntolley/data/ntolley/dendractor/memory_permutations_dms'
+save_path = '/users/ntolley/data/ntolley/dendractor/memory_permutations_receptor_dynamics'
 
 config_list = [
     # ('cuesomanmda_Esomaampa_Edendampa', prior_config.update_prior_dict_cuesomanmda_Esomaampa_Edendampa), # 4
     # ('cuesomaampa_Esomaampa_Edendampa', prior_config.update_prior_dict_cuesomaampa_Esomaampa_Edendampa), # 5
     # ('cuedendnmda_Esomaampa_Edendampa', prior_config.update_prior_dict_cuedendnmda_Esomaampa_Edendampa), # 10
     # ('cuedendampa_Esomaampa_Edendampa', prior_config.update_prior_dict_cuedendampa_Esomaampa_Edendampa), # 11,
-    ('all_connections', prior_config.update_prior_dict_all_connections),
+    # ('all_connections', prior_config.update_prior_dict_all_connections),
+    ('cuedendnmdafast_Esomaampa_Edendampa', prior_config.update_prior_dict_cuedendnmdafast_Esomaampa_Edendampa),
+    ('cuedendampaslow_Esomaampa_Edendampa', prior_config.update_prior_dict_cuedendampaslow_Esomaampa_Edendampa),
+    ('cuedendampa_Esomaampa_Edendampa_lowaxialres', prior_config.update_prior_dict_cuedendampa_Esomaampa_Edendampa_lowaxialres),
+
     ]
 
 
@@ -144,7 +148,7 @@ if __name__ == "__main__":
     dt = 0.025
     t_max = 1000
     time_vec = jnp.arange(0, t_max, dt)
-    num_flows = 2
+    num_flows = 10
 
     downsample_factor = 10
 
