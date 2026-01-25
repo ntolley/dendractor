@@ -148,7 +148,7 @@ if __name__ == "__main__":
     dt = 0.025
     t_max = 1000
     time_vec = jnp.arange(0, t_max, dt)
-    num_flows = 10
+    num_flows = 9
 
     downsample_factor = 10
 
@@ -190,13 +190,13 @@ if __name__ == "__main__":
         input_list = jnp.array([[-2,-2], [2,2], [-2, 2], [2,-2]])
 
         num_cond = input_list.shape[0]
-        # input_data = [get_currents_nocontext(input_list[idx], gid_ranges, t_max, dt) for idx in range(num_cond)] # use for memory
-        input_data = [get_currents_dms(input_list[idx], gid_ranges, t_max, dt) for idx in range(num_cond)] # use for dms
+        input_data = [get_currents_nocontext(input_list[idx], gid_ranges, t_max, dt) for idx in range(num_cond)] # use for memory
+        # input_data = [get_currents_dms(input_list[idx], gid_ranges, t_max, dt) for idx in range(num_cond)] # use for dms
 
         cue_currents = jnp.stack([input_data[idx][0] for idx in range(num_cond)])
 
-        # targets_list = [input_data[idx][1][:2, ::downsample_factor] for idx in range(num_cond)] # use for memory
-        targets_list = [input_data[idx][1][:, ::downsample_factor] for idx in range(num_cond)] # use for dms
+        targets_list = [input_data[idx][1][:2, ::downsample_factor] for idx in range(num_cond)] # use for memory
+        # targets_list = [input_data[idx][1][:, ::downsample_factor] for idx in range(num_cond)] # use for dms
         
         targets = np.concatenate(targets_list, axis=1).T
         targets_stacked = jnp.stack(targets_list)

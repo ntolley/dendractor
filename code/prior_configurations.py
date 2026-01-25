@@ -70,6 +70,9 @@ def set_all_conn_off(prior_dict):
     prior_dict['EI_ampa_gS']['bounds'] = g_off
     prior_dict['EI_ampa_pconn']['bounds'] =  p_off
 
+    prior_dict['EI_nmda_gS']['bounds'] = g_off
+    prior_dict['EI_nmda_pconn']['bounds'] =  p_off
+
 def set_all_conn_on(prior_dict):
     # Cue
     prior_dict['cue_Esoma_ampa_gS']['bounds'] = g_on
@@ -111,6 +114,43 @@ def set_all_conn_on(prior_dict):
     # EI
     prior_dict['EI_ampa_gS']['bounds'] = g_on
     prior_dict['EI_ampa_pconn']['bounds'] =  p_on
+
+    prior_dict['EI_nmda_gS']['bounds'] = g_on
+    prior_dict['EI_nmda_pconn']['bounds'] = p_on
+    
+
+def set_prior_all_intrinsic_conn_on(prior_dict):
+    # EEsoma
+    prior_dict['EE_ampa_gS']['bounds'] = g_on
+    prior_dict['EE_ampa_pconn']['bounds'] = p_on
+    prior_dict['EE_nmda_gS']['bounds'] = g_on
+    prior_dict['EE_nmda_pconn']['bounds'] = p_on
+
+    # EEdend
+    prior_dict['EE_dend_ampa_gS']['bounds'] = g_on
+    prior_dict['EE_dend_ampa_pconn']['bounds'] = p_on
+    prior_dict['EE_dend_nmda_gS']['bounds'] = g_on
+    prior_dict['EE_dend_nmda_pconn']['bounds'] = p_on
+
+    # IEsoma
+    prior_dict['IE_gaba_gS']['bounds'] = g_on
+    prior_dict['IE_gaba_pconn']['bounds'] =  p_on
+
+    # IEdend
+    prior_dict['IE_dend_gaba_gS']['bounds'] = g_on
+    prior_dict['IE_dend_gaba_pconn']['bounds'] = p_on
+
+    # II
+    prior_dict['II_gaba_gS']['bounds'] = g_on
+    prior_dict['II_gaba_pconn']['bounds'] =  p_on
+
+    # EI
+    prior_dict['EI_ampa_gS']['bounds'] = g_on
+    prior_dict['EI_ampa_pconn']['bounds'] =  p_on
+
+    prior_dict['EI_nmda_gS']['bounds'] = g_on
+    prior_dict['EI_nmda_pconn']['bounds'] = p_on
+
 
 def set_prior_inhibitory_network(prior_dict):
     # IEsoma
@@ -200,8 +240,10 @@ def set_prior_Esomaampa_Edendampa(prior_dict):
     prior_dict['EE_dend_ampa_gS']['bounds'] = g_on
     prior_dict['EE_dend_ampa_pconn']['bounds'] = p_on
 
+
+
 #________________________________________________________________
-# Variations on NMDA/AMP synapses for extrinsic and intrinsic connections
+# Variations on NMDA/AMPA synapses for extrinsic and intrinsic connections
 
 def update_prior_dict_cuesomaampa_Esomaampa_Edendnmda(prior_dict):
     initalize_prior_dict(prior_dict)
@@ -262,6 +304,29 @@ def update_prior_dict_cuedendampa_Esomaampa_Edendampa(prior_dict):
     initalize_prior_dict(prior_dict)
     set_prior_cuedendampa(prior_dict)
     set_prior_Esomaampa_Edendampa(prior_dict)
+
+
+#________________________________________________________________
+# Variations on NMDA/AMPA synapses for extrinsic connections
+def update_prior_dict_cuesomanmda_intrinsic_all(prior_dict):
+    initalize_prior_dict(prior_dict)
+    set_prior_cuesomanmda(prior_dict)
+    set_prior_all_intrinsic_conn_on(prior_dict)
+
+def update_prior_dict_cuesomaampa_intrinsic_all(prior_dict):
+    initalize_prior_dict(prior_dict)
+    set_prior_cuesomaampa(prior_dict)
+    set_prior_all_intrinsic_conn_on(prior_dict)
+
+def update_prior_dict_cuedendnmda_intrinsic_all(prior_dict):
+    initalize_prior_dict(prior_dict)
+    set_prior_cuedendnmda(prior_dict)
+    set_prior_all_intrinsic_conn_on(prior_dict)
+
+def update_prior_dict_cuedendampa_intrinsic_all(prior_dict):
+    initalize_prior_dict(prior_dict)
+    set_prior_cuedendampa(prior_dict)
+    set_prior_all_intrinsic_conn_on(prior_dict)
 
 #________________________________________________________________
 # Remove calcium for variations on extrinsic NMDA

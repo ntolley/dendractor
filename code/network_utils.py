@@ -271,6 +271,9 @@ def make_network():
     EI_ampa_synapse = AMPA()
     EI_ampa_synapse.change_name('EI_ampa')
 
+    EI_nmda_synapse = NMDA()
+    EI_nmda_synapse.change_name('EI_nmda')
+
     EE_ampa_synapse = AMPA()
     EE_ampa_synapse.change_name('EE_ampa')
     EE_nmda_synapse = NMDA()
@@ -299,6 +302,9 @@ def make_network():
     connectivity_matrix_connect(net.cell(gid_ranges['E']).branch(0).comp(0), net.cell(gid_ranges['I']).branch(0).comp(0), synapse_type=EI_ampa_synapse,
                                 connectivity_matrix=get_conn_matrix(E_indices, I_indices, seed=123))
 
+    connectivity_matrix_connect(net.cell(gid_ranges['E']).branch(0).comp(0), net.cell(gid_ranges['I']).branch(0).comp(0), synapse_type=EI_nmda_synapse,
+                                connectivity_matrix=get_conn_matrix(E_indices, I_indices, seed=123))
+
     # E->E soma and dendrite
     # ampa
     connectivity_matrix_connect(net.cell(gid_ranges['E']).branch(0).comp(0), net.cell(gid_ranges['E']).branch(0).comp(0), synapse_type=EE_ampa_synapse, 
@@ -308,7 +314,7 @@ def make_network():
 
     # nmda
     connectivity_matrix_connect(net.cell(gid_ranges['E']).branch(0).comp(0), net.cell(gid_ranges['E']).branch(0).comp(0), synapse_type=EE_nmda_synapse, 
-                                connectivity_matrix=get_conn_matrix(E_indices, E_indices, seed=124))
+                                connectivity_matrix=get_conn_matrix(E_indices, E_indices, seed=130))
     connectivity_matrix_connect(net.cell(gid_ranges['E']).branch(0).comp(0), net.cell(gid_ranges['E']).branch(3).comp(3), synapse_type=EE_dend_nmda_synapse, 
                                 connectivity_matrix=get_conn_matrix(E_indices, E_indices, seed=224))
 
@@ -602,6 +608,7 @@ def set_train_parameters(net, gid_ranges):
     net.select(edges="all").make_trainable("IE_gaba_gS")
     net.select(edges="all").make_trainable("II_gaba_gS")
     net.select(edges="all").make_trainable("EI_ampa_gS")
+    net.select(edges="all").make_trainable("EI_nmda_gS")
     net.select(edges="all").make_trainable("EE_ampa_gS")
     net.select(edges="all").make_trainable("EE_nmda_gS")
     net.select(edges="all").make_trainable("EE_dend_ampa_gS")
@@ -646,7 +653,7 @@ def set_train_parameters(net, gid_ranges):
 def get_parameter_names():
     conn_names = ["cue_Esoma_ampa", "cue_Esoma_nmda", "cue_Edend_ampa", "cue_Edend_nmda", "noise_Esoma_ampa",
                   "cue_I_ampa", "noise_I_ampa",
-                  "IE_gaba", "II_gaba", "EI_ampa", "EE_ampa", "EE_nmda", "IE_dend_gaba", "EE_dend_ampa", "EE_dend_nmda"]
+                  "IE_gaba", "II_gaba", "EI_ampa", "EI_nmda", "EE_ampa", "EE_nmda", "IE_dend_gaba", "EE_dend_ampa", "EE_dend_nmda"]
 
     conn_g_names = [f'{name}_gS' for name in conn_names]
     conn_pconn_names = [f'{name}_pconn' for name in conn_names]
@@ -674,6 +681,7 @@ def get_prior_dict():
         "IE_gaba_gS": {'bounds': (-9, -2), 'rescale_function': log_scale_forward},
         "II_gaba_gS": {'bounds': (-9, -2), 'rescale_function': log_scale_forward},
         "EI_ampa_gS": {'bounds': (-9, -2), 'rescale_function': log_scale_forward},
+        "EI_nmda_gS": {'bounds': (-9, -2), 'rescale_function': log_scale_forward},
         "EE_ampa_gS": {'bounds': (-9, -2), 'rescale_function': log_scale_forward},
         "EE_nmda_gS": {'bounds': (-9, -2), 'rescale_function': log_scale_forward},
 
@@ -691,6 +699,7 @@ def get_prior_dict():
         "IE_gaba_pconn": {'bounds': (0, 0.3), 'rescale_function': linear_scale_forward},
         "II_gaba_pconn": {'bounds': (0, 0.3), 'rescale_function': linear_scale_forward},
         "EI_ampa_pconn": {'bounds': (0, 0.3), 'rescale_function': linear_scale_forward},
+        "EI_nmda_pconn": {'bounds': (0, 0.3), 'rescale_function': linear_scale_forward},
         "EE_ampa_pconn": {'bounds': (0, 0.3), 'rescale_function': linear_scale_forward},
         "EE_nmda_pconn": {'bounds': (0, 0.3), 'rescale_function': linear_scale_forward},
 
