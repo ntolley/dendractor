@@ -36,8 +36,9 @@ from neurodsp.spectral import compute_spectrum
 import extrinsic_prior_configurations as prior_config
 
 def get_save_path():
-    # save_path = '/users/ntolley/data/ntolley/dendractor/extrinsic_permutations_nocontext'
-    save_path = '/users/ntolley/data/ntolley/dendractor/extrinsic_permutations_nocontext_lowcueprob'
+    # save_path = '/users/ntolley/data/ntolley/dendractor/extrinsic_permutations_nocontext_ringk5_somaampa_dendnmda_strongreccurrent'
+    save_path = '/users/ntolley/data/ntolley/dendractor/extrinsic_permutations_nocontext_ringk5_somaampa_dendnmda_strongreccurrent_recurent_somanmda_dendampa'
+
     return save_path
 
 def get_config_list():
@@ -88,34 +89,23 @@ def simulate_sweep(theta, params, cue_currents, context_currents, seed):
     net.delete_stimuli()
     
     noise_scale = 0.06
-    # cue_noise = jax.random.normal(key=seed_key[0], shape=cue_currents.shape) * noise_scale
-    # context_noise = jax.random.normal(key=seed_key[1], shape=context_currents.shape) * noise_scale
+    add_noise = False
+    if add_noise:
+        cue_noise = jax.random.normal(key=seed_key[0], shape=cue_currents.shape) * noise_scale
+    else:
+        # Only add noise during stim period
+        cue_noise = jnp.zeros(shape=cue_currents.shape)
+        stim_len = 1000
+        cue_start = 10000
+        cue_stop = cue_start + stim_len
+        cue_noise = cue_noise.at[:, cue_start:cue_stop].set(
+            jax.random.normal(key=seed_key[1], shape=(context_currents.shape[0], stim_len)) * noise_scale)
 
-
-    # Only add noise during stim period
-    cue_noise = jnp.zeros(shape=cue_currents.shape)
-    context_noise = jnp.zeros(shape=context_currents.shape)
-    stim_len = 1000
-    cue_start = 10000
-    cue_stop = cue_start + stim_len
-    cue_noise = cue_noise.at[:, cue_start:cue_stop].set(
-        jax.random.normal(key=seed_key[1], shape=(context_currents.shape[0], stim_len)) * noise_scale)
-
-    cue_noise = cue_noise.at[:, 0:stim_len].set(
-        jax.random.normal(key=seed_key[1], shape=(context_currents.shape[0], stim_len)) * noise_scale)
-        
-    context_start = 10000
-    context_stop = context_start + stim_len
-    context_noise = context_noise.at[:, context_start:context_stop].set(
-        jax.random.normal(key=seed_key[2], shape=(context_currents.shape[0], stim_len)) * noise_scale)
-
-    context_noise = context_noise.at[:, 0:stim_len].set(
-        jax.random.normal(key=seed_key[2], shape=(context_currents.shape[0], stim_len)) * noise_scale)
+        cue_noise = cue_noise.at[:, 0:stim_len].set(
+            jax.random.normal(key=seed_key[1], shape=(context_currents.shape[0], stim_len)) * noise_scale)
 
     # Attach stimulation
     data_stimuli = net.cell(list(gid_ranges['cue'])).branch(0).comp(0).data_stimulate(cue_currents + cue_noise)
-    # data_stimuli = net.cell(list(gid_ranges['context'])).branch(0).comp(0).data_stimulate(
-    #     context_currents + context_noise, data_stimuli=data_stimuli)
 
     vmin, vmax = -80, -40
     E_voltages = jax.random.uniform(key=seed_key[2], minval=vmin, maxval=vmax, shape=(len(net.cell(list(gid_ranges['E'])).nodes),))

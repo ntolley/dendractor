@@ -1,4 +1,5 @@
-recurrent_g_on = (-4, 1)
+# recurrent_g_on = (-4, 1)
+recurrent_g_on = (-2, 1)
 recurrent_p_on = (0, 0.3)
 
 g_off = (-20, -20)

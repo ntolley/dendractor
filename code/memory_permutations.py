@@ -27,39 +27,43 @@ from sbi.inference import NPE
 from sbi.utils import RestrictedPrior, get_density_thresholder
 from tqdm import tqdm
 
-from network_utils import (make_network, set_train_parameters, get_currents, log_scale_forward, linear_scale_forward,
-                           get_prior_dict, initialize_params, get_parameter_names)
+from network_utils import (make_network, make_network_dms, set_train_parameters, get_currents_nocontext, get_currents_dms,
+                           log_scale_forward, linear_scale_forward, get_prior_dict, initialize_params, get_parameter_names)
 from flow_utils import UniformPrior, PriorFiltered
 from sklearn.linear_model import LinearRegression, Ridge
 
 from neurodsp.spectral import compute_spectrum
-import extrinsic_prior_configurations as prior_config
+import prior_configurations as prior_config
 
 def get_save_path():
-    # save_path = '/users/ntolley/data/ntolley/dendractor/extrinsic_permutations'
-    # save_path = '/users/ntolley/data/ntolley/dendractor/extrinsic_permutations_subnetwork_outputs'
-    # save_path = '/users/ntolley/data/ntolley/dendractor/extrinsic_permutations_subnet_cluster5'
-    # save_path = '/users/ntolley/data/ntolley/dendractor/extrinsic_permutations_subnet_highprob_cuecontext'
-    # save_path = '/users/ntolley/data/ntolley/dendractor/extrinsic_permutations_subnet_highprob_cuecontext_ring_k5'
-    # save_path = '/users/ntolley/data/ntolley/dendractor/extrinsic_permutations_subnet_highprob_cuecontext_ring_k10'
-    # save_path = '/users/ntolley/data/ntolley/dendractor/extrinsic_permutations_subnet_labeledlines'
-    # save_path = '/users/ntolley/data/ntolley/dendractor/extrinsic_permutations_subnet_labeledlines_prob1'
-    save_path = '/users/ntolley/data/ntolley/dendractor/extrinsic_permutations_subnet_labeledlines_v2'
-
-
-
+    # save_path = '/users/ntolley/data/ntolley/dendractor/memory_permutations'
+    # save_path = '/users/ntolley/data/ntolley/dendractor/memory_permutations_dms'
+    save_path = '/users/ntolley/data/ntolley/dendractor/memory_permutations_receptor_dynamics'
     return save_path
 
 def get_config_list():
     config_list = [
-        ('contextsoma_cuesoma', prior_config.update_prior_dict_contextsoma_cuesoma), # 0
-        ('contextdend_cuedend', prior_config.update_prior_dict_contextdend_cuedend), # 1
-        ('contextsoma_cuedend', prior_config.update_prior_dict_contextsoma_cuedend), # 2
-        ('contextdend_cuesoma', prior_config.update_prior_dict_contextdend_cuesoma), # 3
+        # Extrinsic and intrinsic NMDA variations
+        # ('cuedendnmdafast_Esomaampa_Edendampa', prior_config.update_prior_dict_cuedendnmdafast_Esomaampa_Edendampa),
+        # ('cuedendampaslow_Esomaampa_Edendampa', prior_config.update_prior_dict_cuedendampaslow_Esomaampa_Edendampa),
+        # ('cuedendampa_Esomaampa_Edendampa_lowaxialres', prior_config.update_prior_dict_cuedendampa_Esomaampa_Edendampa_lowaxialres),
+
+        # ('cuedendnmda_Esomaampa_Edendampa', prior_config.update_prior_dict_cuedendnmda_Esomaampa_Edendampa), # 8
+        # ('cuedendampa_Esomaampa_Edendampa', prior_config.update_prior_dict_cuedendampa_Esomaampa_Edendampa), # 14
+        # ('cuesomanmda_Esomaampa_Edendampa', prior_config.update_prior_dict_cuesomanmda_Esomaampa_Edendampa), # 10
+        # ('cuesomaampa_Esomaampa_Edendampa', prior_config.update_prior_dict_cuesomaampa_Esomaampa_Edendampa), # 12
+
+        # Variations with all intrinsic on
+        ('cuedendnmda_intrinsic_all', prior_config.update_prior_dict_cuedendnmda_intrinsic_all), # 8
+        ('cuedendampa_intrinsic_all', prior_config.update_prior_dict_cuedendampa_intrinsic_all), # 14
+        # ('cuesomanmda_intrinsic_all', prior_config.update_prior_dict_cuesomanmda_intrinsic_all), # 10
+        # ('cuesomaampa_intrinsic_all', prior_config.update_prior_dict_cuesomaampa_intrinsic_all), # 12
+
         ]
+
     return config_list
 
-def simulate_sweep(theta, params, cue_currents, context_currents, seed):
+def simulate_sweep(theta, params, cue_currents, seed):
     seed_key = jax.random.split(jax.random.PRNGKey(seed), num=4)
     rng = np.random.default_rng(seed=123)
 
@@ -98,34 +102,19 @@ def simulate_sweep(theta, params, cue_currents, context_currents, seed):
     net.delete_stimuli()
     
     noise_scale = 0.06
-    # cue_noise = jax.random.normal(key=seed_key[0], shape=cue_currents.shape) * noise_scale
-    # context_noise = jax.random.normal(key=seed_key[1], shape=context_currents.shape) * noise_scale
 
+    noise_E_shape = (len(list(gid_ranges['noise_E'])), cue_currents.shape[1])
+    noise_I_shape = (len(list(gid_ranges['noise_I'])), cue_currents.shape[1])
 
-    # Only add noise during stim period
-    cue_noise = jnp.zeros(shape=cue_currents.shape)
-    context_noise = jnp.zeros(shape=context_currents.shape)
-    stim_len = 1000
-    cue_start = 28000
-    cue_stop = cue_start + stim_len
-    cue_noise = cue_noise.at[:, cue_start:cue_stop].set(
-        jax.random.normal(key=seed_key[1], shape=(context_currents.shape[0], stim_len)) * noise_scale)
-
-    cue_noise = cue_noise.at[:, 0:stim_len].set(
-        jax.random.normal(key=seed_key[1], shape=(context_currents.shape[0], stim_len)) * noise_scale)
-        
-    context_start = 10000
-    context_stop = context_start + stim_len
-    context_noise = context_noise.at[:, context_start:context_stop].set(
-        jax.random.normal(key=seed_key[2], shape=(context_currents.shape[0], stim_len)) * noise_scale)
-
-    context_noise = context_noise.at[:, 0:stim_len].set(
-        jax.random.normal(key=seed_key[2], shape=(context_currents.shape[0], stim_len)) * noise_scale)
+    noise_E = jax.random.normal(key=seed_key[0], shape=noise_E_shape) * noise_scale
+    noise_I = jax.random.normal(key=seed_key[1], shape=noise_I_shape) * noise_scale
 
     # Attach stimulation
-    data_stimuli = net.cell(list(gid_ranges['cue'])).branch(0).comp(0).data_stimulate(cue_currents + cue_noise)
-    data_stimuli = net.cell(list(gid_ranges['context'])).branch(0).comp(0).data_stimulate(
-        context_currents + context_noise, data_stimuli=data_stimuli)
+    data_stimuli = None
+    data_stimuli = net.cell(list(gid_ranges['cue'])).branch(0).comp(0).data_stimulate(cue_currents, data_stimuli=data_stimuli)
+    data_stimuli = net.cell(list(gid_ranges['noise_E'])).branch(0).comp(0).data_stimulate(noise_E, data_stimuli=data_stimuli)
+    data_stimuli = net.cell(list(gid_ranges['noise_I'])).branch(0).comp(0).data_stimulate(noise_I, data_stimuli=data_stimuli)
+
 
     vmin, vmax = -80, -40
     E_voltages = jax.random.uniform(key=seed_key[2], minval=vmin, maxval=vmax, shape=(len(net.cell(list(gid_ranges['E'])).nodes),))
@@ -155,23 +144,21 @@ if __name__ == "__main__":
     data_path = f'{save_path}/{config_name}'
     os.makedirs(f'{data_path}/tmp', exist_ok=True)
 
-    # dt = 0.05
     dt = 0.025
-    # t_max = 2000
     t_max = 1000
     time_vec = jnp.arange(0, t_max, dt)
 
     # Number of samples before calculating error
-    burn_in = 30_000
+    burn_in = 10_000 # use for memory
+    # burn_in = 15_000 # use for dms
 
     downsample_factor = 10
 
     prior_dict = get_prior_dict()
     update_prior_dict(prior_dict)
 
-
-
-    net, gid_ranges = make_network()
+    net, gid_ranges = make_network() # use for memeory
+    # net, gid_ranges = make_network_dms() # use for dms
     with open(f'{data_path}/jaxley_net.pkl', 'wb') as f:
         pickle.dump((net, gid_ranges),f)
 
@@ -181,42 +168,35 @@ if __name__ == "__main__":
     # prepare samples for parameter sweep
     params, _ = set_train_parameters(net, gid_ranges)
 
-    # num_simulations = 250
     num_simulations = 100
-    # num_simulations = 40
 
     num_prior_fits = 10
     num_iter = 5000
 
-    # batch_size = 20
-    # num_repeats = 2
-
     batch_size = 10
     num_repeats = 5
 
-    # batch_size = 5
-    # num_repeats = 10
 
-    # input_list = jnp.array([[-2,-2,1], [2,2,1], [-2, 2,1], [2,-2,1],
-    #                         [-2,-2,-1], [2,2,-1], [-2, 2,-1], [2,-2,-1]])
-    input_list = jnp.array([[-2,-2,1], [2,2,1], [-2,-2,-1], [2,2,-1]])
+    input_list = jnp.array([[-2,-2], [2,2], [-2, 2], [2,-2]])
     num_inputs = input_list.shape[0]
     input_list = jnp.tile(input_list, (num_repeats, 1))
 
     num_cond = input_list.shape[0]
 
-    input_data = [get_currents(input_list[idx], gid_ranges, t_max, dt) for idx in range(num_cond)]
-    cue_currents = jnp.stack([input_data[idx][0] for idx in range(num_cond)])
-    context_currents = jnp.stack([input_data[idx][1] for idx in range(num_cond)])
+    input_data = [get_currents_nocontext(input_list[idx], gid_ranges, t_max, dt) for idx in range(num_cond)] # use for memory
+    # input_data = [get_currents_dms(input_list[idx], gid_ranges, t_max, dt) for idx in range(num_cond)] # use for dms
 
-    targets_list = np.array([input_data[idx][2][:2, burn_in::downsample_factor] for idx in range(num_cond)])
+    cue_currents = jnp.stack([input_data[idx][0] for idx in range(num_cond)])
+
+    targets_list = np.array([input_data[idx][1][:2, burn_in::downsample_factor] for idx in range(num_cond)]) # use for memory
+    # targets_list = np.array([input_data[idx][1][:, burn_in::downsample_factor] for idx in range(num_cond)]) # use for dms
+
 
     cue_currents_batch = jnp.tile(cue_currents, (batch_size, 1, 1))
-    context_currents_batch = jnp.tile(context_currents, (batch_size, 1, 1))
     print(cue_currents_batch.shape)
 
     jitted_simulate = jit(simulate_sweep)
-    jitted_vmapped_simulate = vmap(jitted_simulate, in_axes=(0, None, 0, 0, 0))
+    jitted_vmapped_simulate = vmap(jitted_simulate, in_axes=(0, None, 0, 0))
 
     # Set up SBI objects
     prior = UniformPrior(parameters=list(prior_dict.keys()))
@@ -243,7 +223,7 @@ if __name__ == "__main__":
             theta_batch = jnp.repeat(theta_batch, num_cond, axis=0)
 
             seed_batch = jnp.arange(start_idx*num_cond, end_idx*num_cond)
-            output = np.array(jitted_vmapped_simulate(theta_batch, params, cue_currents_batch, context_currents_batch, seed_batch))
+            output = np.array(jitted_vmapped_simulate(theta_batch, params, cue_currents_batch, seed_batch))
             output = output[:, :, burn_in::downsample_factor]
 
             # Loop over each unique parameter set (theta)
@@ -276,7 +256,9 @@ if __name__ == "__main__":
 
                     # Calculate mean output of network
                     y_pred_cond = [np.mean(model.predict(x_val_cond.T), axis=0) for x_val_cond in x_list[val_mask]]
-                    temp_y_pred_list.append(np.concatenate(y_pred_cond))
+
+                    temp_y_pred_list.append(np.concatenate(y_pred_cond)) # use for memory
+                    # temp_y_pred_list.append(y_pred_cond) # use for dms
 
                 # Update with average predicted output over (vector of size (num_inputs))
                 y_pred_avg = np.mean(np.array(temp_y_pred_list), axis=0)
@@ -291,7 +273,9 @@ if __name__ == "__main__":
         np.save(f'{data_path}/flow_error_{flow_idx}.npy', error_list)
 
         # Heavily penalize chance level predictions
-        y_pred_mask = np.mean(np.abs(y_pred_list), axis=1) < 0.2
+        y_pred_mask = np.mean(np.abs(y_pred_list), axis=1) < 0.2 # use for memory
+        # y_pred_mask = np.mean(np.abs(y_pred_list), axis=1) < 0.2 # use for dms
+
         error_list[y_pred_mask] += 1e3
         print(f'{np.sum(y_pred_mask)} null simulations')
 
@@ -314,16 +298,20 @@ if __name__ == "__main__":
 
 
         # Filter theta using feature masks, take top simulations that separate inputs
-        proposal = PriorFiltered(parameters=list(prior_dict.keys()))
-        optimizer = optim.Adam(proposal.flow.parameters())
+        if theta_train.shape[0] < 5:
+            print('Too few passing sims, reusing same distribution')
 
-        # Train flow
-        num_iter = 5000
-        for i in tqdm(range(num_iter)):
-            optimizer.zero_grad()
-            loss = -proposal.flow.log_prob(inputs=theta_train).mean()
-            loss.backward()
-            optimizer.step()
+        else:
+            proposal = PriorFiltered(parameters=list(prior_dict.keys()))
+            optimizer = optim.Adam(proposal.flow.parameters())
+
+            # Train flow
+            num_iter = 5000
+            for i in tqdm(range(num_iter)):
+                optimizer.zero_grad()
+                loss = -proposal.flow.log_prob(inputs=theta_train).mean()
+                loss.backward()
+                optimizer.step()
         state_dict = proposal.flow.state_dict()
         joblib.dump(state_dict, f'{data_path}/prior_filtered_flow_{flow_idx}.pkl')
 

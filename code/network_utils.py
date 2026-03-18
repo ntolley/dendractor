@@ -90,9 +90,9 @@ def gaussian_tuning(tuned_val, state_val, sigma):
     return 1.0 / (jnp.sqrt(2.0 * jnp.pi) * sigma.reshape(-1, 1)) * jnp.exp(-jnp.power((state_val - tuned_val) / sigma.reshape(-1, 1), 2.0))
 
 
-def get_conn_matrix(src_indices, target_indices, seed=123, p_conn=1.0):
-    graph = gaussian_random_partition_graph(n=600, s=10, v=1e10, p_in=1.0, p_out=0.0)
-    # graph = watts_strogatz_graph(n=600, k=10, p=0.0)
+def get_conn_matrix(src_indices, target_indices, k=5, seed=123, p_conn=1.0):
+    # graph = gaussian_random_partition_graph(n=600, s=10, v=1e10, p_in=1.0, p_out=0.0)
+    graph = watts_strogatz_graph(n=600, k=k, p=0.0)
 
     conn_rng = np.random.default_rng(seed)
 
@@ -150,26 +150,22 @@ def make_network():
     I_cell.branch(0).set('length', 5.0)
     I_cell.branch(0).set('radius', 5.0 / 2)
 
-    context_cell = jx.Cell(soma, parents=[-1])
     cue_cell = jx.Cell(soma, parents=[-1])
     rate_cell = jx.Cell(soma, parents=[-1])
-    for cell in [context_cell, cue_cell, rate_cell]:
+    noise_cell = jx.Cell(soma, parents=[-1])
+    for cell in [cue_cell, rate_cell, noise_cell]:
         cell.branch(0).set('length', 5.0)
         cell.branch(0).set('radius', 5.0 / 2)
 
-    # num_E_cells = 100
-    # num_I_cells = 50
-    # num_context_cells = 50
-    # num_cue_cells = 50
     num_E_cells = 50
     num_I_cells = 25
-    num_context_cells = 25
     num_cue_cells = 25
 
     net_dict = {
         'E': {'num_cells': num_E_cells, 'cell': E_cell},
         'I': {'num_cells': num_I_cells, 'cell': I_cell},
-        'context': {'num_cells': num_context_cells, 'cell': context_cell},
+        'noise_E': {'num_cells': num_E_cells, 'cell': noise_cell},
+        'noise_I': {'num_cells': num_I_cells, 'cell': noise_cell},
         'cue': {'num_cells': num_cue_cells, 'cell': cue_cell},
         'E_rate': {'num_cells': num_E_cells, 'cell': rate_cell},
         'I_rate': {'num_cells': num_I_cells, 'cell': rate_cell},
@@ -186,7 +182,7 @@ def make_network():
 
     net = jx.Network(cell_list)
 
-    for name in ['context', 'cue']:
+    for name in ['noise_E', 'noise_I', 'cue']:
         net.cell(gid_ranges[name]).insert(Na())
         net.cell(gid_ranges[name]).insert(K())
         net.cell(gid_ranges[name]).insert(Leak())
@@ -249,36 +245,44 @@ def make_network():
         net.cell(gid_ranges[name]).set('v', 0.0)
 
     cue_Esoma_ampa_synapse = AMPA()
-    # cue_Esoma_ampa_synapse = NMDA()
     cue_Esoma_ampa_synapse.change_name('cue_Esoma_ampa')
+    cue_Esoma_nmda_synapse = NMDA()
+    cue_Esoma_nmda_synapse.change_name('cue_Esoma_nmda')
 
-    # cue_Edend_ampa_synapse = AMPA()
-    cue_Edend_ampa_synapse = NMDA()
+
+    cue_Edend_ampa_synapse = AMPA()
     cue_Edend_ampa_synapse.change_name('cue_Edend_ampa')
+    cue_Edend_nmda_synapse = NMDA()
+    cue_Edend_nmda_synapse.change_name('cue_Edend_nmda')
 
-    context_Esoma_ampa_synapse = AMPA()
-    # context_Esoma_ampa_synapse = NMDA()
-    context_Esoma_ampa_synapse.change_name('context_Esoma_ampa')
 
-    # context_Edend_ampa_synapse = AMPA()
-    context_Edend_ampa_synapse = NMDA()
-    context_Edend_ampa_synapse.change_name('context_Edend_ampa')
+    noise_Esoma_ampa_synapse = AMPA()
+    noise_Esoma_ampa_synapse.change_name('noise_Esoma_ampa')
+
+    # noise_Edend_ampa_synapse = AMPA()
+    # noise_Edend_ampa_synapse.change_name('noise_Edend_ampa')
 
     cue_I_ampa_synapse = AMPA()
     cue_I_ampa_synapse.change_name('cue_I_ampa')
 
-    context_I_ampa_synapse = AMPA()
-    context_I_ampa_synapse.change_name('context_I_ampa')
+    noise_I_ampa_synapse = AMPA()
+    noise_I_ampa_synapse.change_name('noise_I_ampa')
 
     EI_ampa_synapse = AMPA()
     EI_ampa_synapse.change_name('EI_ampa')
 
+    EI_nmda_synapse = NMDA()
+    EI_nmda_synapse.change_name('EI_nmda')
+
     EE_ampa_synapse = AMPA()
     EE_ampa_synapse.change_name('EE_ampa')
+    EE_nmda_synapse = NMDA()
+    EE_nmda_synapse.change_name('EE_nmda')
 
-    # EE_dend_ampa_synapse = AMPA()
-    EE_dend_ampa_synapse = NMDA()
+    EE_dend_ampa_synapse = AMPA()
     EE_dend_ampa_synapse.change_name('EE_dend_ampa')
+    EE_dend_nmda_synapse = NMDA()
+    EE_dend_nmda_synapse.change_name('EE_dend_nmda')
 
     IE_gaba_synapse = GABAa()
     IE_gaba_synapse.change_name('IE_gaba')
@@ -289,7 +293,7 @@ def make_network():
     II_gaba_synapse = GABAa()
     II_gaba_synapse.change_name('II_gaba')
 
-    exp_synapse = StimSynapse()
+    exp_synapse = AMPA()
     exp_synapse.change_name('exp_synapse')
 
     #  ******* CLUSTERED CONNECTIVITY *********
@@ -298,10 +302,20 @@ def make_network():
     connectivity_matrix_connect(net.cell(gid_ranges['E']).branch(0).comp(0), net.cell(gid_ranges['I']).branch(0).comp(0), synapse_type=EI_ampa_synapse,
                                 connectivity_matrix=get_conn_matrix(E_indices, I_indices, seed=123))
 
+    connectivity_matrix_connect(net.cell(gid_ranges['E']).branch(0).comp(0), net.cell(gid_ranges['I']).branch(0).comp(0), synapse_type=EI_nmda_synapse,
+                                connectivity_matrix=get_conn_matrix(E_indices, I_indices, seed=123))
+
     # E->E soma and dendrite
+    # ampa
     connectivity_matrix_connect(net.cell(gid_ranges['E']).branch(0).comp(0), net.cell(gid_ranges['E']).branch(0).comp(0), synapse_type=EE_ampa_synapse, 
                                 connectivity_matrix=get_conn_matrix(E_indices, E_indices, seed=124))
     connectivity_matrix_connect(net.cell(gid_ranges['E']).branch(0).comp(0), net.cell(gid_ranges['E']).branch(3).comp(3), synapse_type=EE_dend_ampa_synapse, 
+                                connectivity_matrix=get_conn_matrix(E_indices, E_indices, seed=224))
+
+    # nmda
+    connectivity_matrix_connect(net.cell(gid_ranges['E']).branch(0).comp(0), net.cell(gid_ranges['E']).branch(0).comp(0), synapse_type=EE_nmda_synapse, 
+                                connectivity_matrix=get_conn_matrix(E_indices, E_indices, seed=130))
+    connectivity_matrix_connect(net.cell(gid_ranges['E']).branch(0).comp(0), net.cell(gid_ranges['E']).branch(3).comp(3), synapse_type=EE_dend_nmda_synapse, 
                                 connectivity_matrix=get_conn_matrix(E_indices, E_indices, seed=224))
 
     # I->E soma and dendrite
@@ -318,33 +332,269 @@ def make_network():
     E_in_gids = list(gid_ranges['E'])[::2]
     E_out_gids = list(gid_ranges['E'])[1::2]
     E_out_rate_gids = list(gid_ranges['E_rate'])[1::2]
+    I_in_gids = list(gid_ranges['I'])
 
-    I_in_gids = list(gid_ranges['I'])[::2]
-    I_out_gids = list(gid_ranges['I'])[1::2]
-    I_out_rate_gids = list(gid_ranges['I_rate'])[1::2]
-
+    # cue->E ampa
     sparse_connect(net.cell(gid_ranges['cue']).branch(0).comp(0), net.cell(E_in_gids).branch(0).comp(0), synapse_type=cue_Esoma_ampa_synapse, p=0.1)
     sparse_connect(net.cell(gid_ranges['cue']).branch(0).comp(0), net.cell(E_in_gids).branch(3).comp(3), synapse_type=cue_Edend_ampa_synapse, p=0.1)
+
+    # cue->E nmda
+    sparse_connect(net.cell(gid_ranges['cue']).branch(0).comp(0), net.cell(E_in_gids).branch(0).comp(0), synapse_type=cue_Esoma_nmda_synapse, p=0.1)
+    sparse_connect(net.cell(gid_ranges['cue']).branch(0).comp(0), net.cell(E_in_gids).branch(3).comp(3), synapse_type=cue_Edend_nmda_synapse, p=0.1)
+
+    # cue->I ampa
     sparse_connect(net.cell(gid_ranges['cue']).branch(0).comp(0), net.cell(I_in_gids).branch(0).comp(0), synapse_type=cue_I_ampa_synapse, p=0.1)
-
-    sparse_connect(net.cell(gid_ranges['context']).branch(0).comp(0), net.cell(E_in_gids).branch(0).comp(0), synapse_type=context_Esoma_ampa_synapse, p=0.1)
-    sparse_connect(net.cell(gid_ranges['context']).branch(0).comp(0), net.cell(E_in_gids).branch(3).comp(3), synapse_type=context_Edend_ampa_synapse, p=0.1)
-    sparse_connect(net.cell(gid_ranges['context']).branch(0).comp(0), net.cell(I_in_gids).branch(0).comp(0), synapse_type=context_I_ampa_synapse, p=0.1)
-
 
 
     connectivity_matrix_connect(net.cell(E_out_gids).branch(0).comp(0), net.cell(E_out_rate_gids).branch(0).comp(0),
                                 synapse_type=exp_synapse, connectivity_matrix=np.eye(len(E_out_gids)).astype(bool))
-    connectivity_matrix_connect(net.cell(I_out_gids).branch(0).comp(0), net.cell(I_out_rate_gids).branch(0).comp(0),
-                                synapse_type=exp_synapse, connectivity_matrix=np.eye(len(I_out_gids)).astype(bool))
+
+    connectivity_matrix_connect(net.cell(list(gid_ranges['noise_E'])).branch(0).comp(0), net.cell(list(gid_ranges['E'])).branch(0).comp(0),
+                                synapse_type=noise_Esoma_ampa_synapse, connectivity_matrix=np.eye(num_E_cells).astype(bool))
+
+    connectivity_matrix_connect(net.cell(list(gid_ranges['noise_I'])).branch(0).comp(0), net.cell(list(gid_ranges['I'])).branch(0).comp(0),
+                                synapse_type=noise_I_ampa_synapse, connectivity_matrix=np.eye(num_I_cells).astype(bool))
+
+
+    net.copy_node_property_to_edges("global_cell_index")
+
+    return net, gid_ranges
+
+def make_network_dms():
+    comp = jx.Compartment()
+    soma = jx.Branch(comp, ncomp=4)
+    branch =  jx.Branch(comp, ncomp=4)
+    
+    E_cell = jx.Cell([soma, branch, branch, branch], parents=[-1, 0, 1, 2])
+
+    E_cell.compute_xyz()
+    E_cell.branch(0).set('length', 25.0)
+    E_cell.branch(0).set('radius', 25.0 / 2)
+
+    E_cell.branch(1).set('length', 100.0)
+    E_cell.branch(1).set('radius', 2.5 / 2)
+
+    E_cell.branch(2).set('length', 100.0)
+    E_cell.branch(2).set('radius', 1.0 / 2)
+
+    E_cell.branch(3).set('length', 100.0)
+    E_cell.branch(3).set('radius', 0.5 / 2)
+
+    E_cell.set('axial_resistivity', 300)
+
+    I_cell = jx.Cell(soma, parents=[-1])
+    I_cell.branch(0).set('length', 5.0)
+    I_cell.branch(0).set('radius', 5.0 / 2)
+
+    cue_cell = jx.Cell(soma, parents=[-1])
+    rate_cell = jx.Cell(soma, parents=[-1])
+    noise_cell = jx.Cell(soma, parents=[-1])
+    for cell in [cue_cell, rate_cell, noise_cell]:
+        cell.branch(0).set('length', 5.0)
+        cell.branch(0).set('radius', 5.0 / 2)
+
+    num_E_cells = 50
+    num_I_cells = 25
+    num_cue_cells = 25
+
+    net_dict = {
+        'E': {'num_cells': num_E_cells, 'cell': E_cell},
+        'I': {'num_cells': num_I_cells, 'cell': I_cell},
+        'noise_E': {'num_cells': num_E_cells, 'cell': noise_cell},
+        'noise_I': {'num_cells': num_I_cells, 'cell': noise_cell},
+        'cue': {'num_cells': num_cue_cells, 'cell': cue_cell},
+        'E_rate': {'num_cells': num_E_cells, 'cell': rate_cell},
+        'I_rate': {'num_cells': num_I_cells, 'cell': rate_cell},
+    }
+
+    gid_ranges = dict()
+    cell_list = list()
+    cell_count = 0
+    for name, cell_dict in net_dict.items():
+        num_cells = cell_dict['num_cells']
+        gid_ranges[name] = range(cell_count, cell_count + num_cells)
+        cell_list.extend([cell_dict['cell'] for _ in range(num_cells)])
+        cell_count += num_cells
+
+    net = jx.Network(cell_list)
+
+    for name in ['noise_E', 'noise_I', 'cue']:
+        net.cell(gid_ranges[name]).insert(Na())
+        net.cell(gid_ranges[name]).insert(K())
+        net.cell(gid_ranges[name]).insert(Leak())
+    
+    e_km, e_dend_km, i_km = Km(), Km(), Km()
+    e_km.change_name('E_Km')
+    e_dend_km.change_name('E_dend_Km')
+    i_km.change_name('I_Km')
+
+    e_cat, e_dend_cat, i_cat = CaT(), CaT(), CaT()
+    e_cat.change_name('E_CaT')
+    e_dend_cat.change_name('E_dend_CaT')
+    i_cat.change_name('I_CaT')
+
+    e_cal, e_dend_cal, i_cal = CaL(), CaL(), CaL()
+    e_cal.change_name('E_CaL')
+    e_dend_cal.change_name('E_dend_CaL')
+    i_cal.change_name('I_CaL')
+
+    e_leak, e_dend_leak, i_leak = Leak(), Leak(), Leak()
+    e_leak.change_name('E_Leak')
+    e_dend_leak.change_name('E_dend_Leak')
+    i_leak.change_name('I_Leak')
+
+    e_na, e_dend_na, i_na = Na(), Na(), Na()
+    e_na.change_name('E_Na')
+    e_dend_na.change_name('E_dend_Na')
+    i_na.change_name('I_Na')
+
+    e_k, e_dend_k, i_k = K(), K(), K()
+    e_k.change_name('E_K')
+    e_dend_k.change_name('E_dend_K')
+    i_k.change_name('I_K')
+
+
+    net.cell(gid_ranges['E']).branch(0).insert(e_leak)
+    net.cell(gid_ranges['E']).branch(0).insert(e_na)
+    net.cell(gid_ranges['E']).branch(0).insert(e_k)
+    net.cell(gid_ranges['E']).branch(0).insert(e_km)
+    net.cell(gid_ranges['E']).branch(0).insert(e_cat)
+    net.cell(gid_ranges['E']).branch(0).insert(e_cal)
+
+    net.cell(gid_ranges['E']).branch([1,2,3]).insert(e_dend_leak)
+    net.cell(gid_ranges['E']).branch([1,2,3]).insert(e_dend_na)
+    net.cell(gid_ranges['E']).branch([1,2,3]).insert(e_dend_k)
+    net.cell(gid_ranges['E']).branch([1,2,3]).insert(e_dend_km)
+    net.cell(gid_ranges['E']).branch([1,2,3]).insert(e_dend_cat)
+    net.cell(gid_ranges['E']).branch([1,2,3]).insert(e_dend_cal)
+
+    net.cell(gid_ranges['I']).insert(i_leak)
+    net.cell(gid_ranges['I']).insert(i_na)
+    net.cell(gid_ranges['I']).insert(i_k)
+    net.cell(gid_ranges['I']).insert(i_km)
+    net.cell(gid_ranges['I']).insert(i_cat)
+    net.cell(gid_ranges['I']).insert(i_cal)
+
+    for name in ['E_rate', 'I_rate']:
+        net.cell(gid_ranges[name]).insert(Leak())
+        net.cell(gid_ranges[name]).set('Leak_eLeak', 0.0)
+        net.cell(gid_ranges[name]).set('v', 0.0)
+
+    cue_Esoma_ampa_synapse = AMPA()
+    cue_Esoma_ampa_synapse.change_name('cue_Esoma_ampa')
+    cue_Esoma_nmda_synapse = NMDA()
+    cue_Esoma_nmda_synapse.change_name('cue_Esoma_nmda')
+
+
+    cue_Edend_ampa_synapse = AMPA()
+    cue_Edend_ampa_synapse.change_name('cue_Edend_ampa')
+    cue_Edend_nmda_synapse = NMDA()
+    cue_Edend_nmda_synapse.change_name('cue_Edend_nmda')
+
+
+    noise_Esoma_ampa_synapse = AMPA()
+    noise_Esoma_ampa_synapse.change_name('noise_Esoma_ampa')
+
+    # noise_Edend_ampa_synapse = AMPA()
+    # noise_Edend_ampa_synapse.change_name('noise_Edend_ampa')
+
+    cue_I_ampa_synapse = AMPA()
+    cue_I_ampa_synapse.change_name('cue_I_ampa')
+
+    noise_I_ampa_synapse = AMPA()
+    noise_I_ampa_synapse.change_name('noise_I_ampa')
+
+    EI_ampa_synapse = AMPA()
+    EI_ampa_synapse.change_name('EI_ampa')
+
+    EE_ampa_synapse = AMPA()
+    EE_ampa_synapse.change_name('EE_ampa')
+    EE_nmda_synapse = NMDA()
+    EE_nmda_synapse.change_name('EE_nmda')
+
+    EE_dend_ampa_synapse = AMPA()
+    EE_dend_ampa_synapse.change_name('EE_dend_ampa')
+    EE_dend_nmda_synapse = NMDA()
+    EE_dend_nmda_synapse.change_name('EE_dend_nmda')
+
+    IE_gaba_synapse = GABAa()
+    IE_gaba_synapse.change_name('IE_gaba')
+
+    IE_dend_gaba_synapse = GABAa()
+    IE_dend_gaba_synapse.change_name('IE_dend_gaba')
+
+    II_gaba_synapse = GABAa()
+    II_gaba_synapse.change_name('II_gaba')
+
+    exp_synapse = AMPA()
+    exp_synapse.change_name('exp_synapse')
+
+    #  ******* CLUSTERED CONNECTIVITY *********
+    k = 5  # number of neighbors
+
+    E_indices, I_indices = np.arange(num_E_cells), np.arange(num_I_cells) * (num_E_cells // num_I_cells)
+    # E->I soma
+    connectivity_matrix_connect(net.cell(gid_ranges['E']).branch(0).comp(0), net.cell(gid_ranges['I']).branch(0).comp(0), synapse_type=EI_ampa_synapse,
+                                connectivity_matrix=get_conn_matrix(E_indices, I_indices, k=k, seed=123))
+
+    # E->E soma and dendrite
+    # ampa
+    connectivity_matrix_connect(net.cell(gid_ranges['E']).branch(0).comp(0), net.cell(gid_ranges['E']).branch(0).comp(0), synapse_type=EE_ampa_synapse, 
+                                connectivity_matrix=get_conn_matrix(E_indices, E_indices, k=k, seed=124))
+    connectivity_matrix_connect(net.cell(gid_ranges['E']).branch(0).comp(0), net.cell(gid_ranges['E']).branch(3).comp(3), synapse_type=EE_dend_ampa_synapse, 
+                                connectivity_matrix=get_conn_matrix(E_indices, E_indices, k=k, seed=224))
+
+    # nmda
+    connectivity_matrix_connect(net.cell(gid_ranges['E']).branch(0).comp(0), net.cell(gid_ranges['E']).branch(0).comp(0), synapse_type=EE_nmda_synapse, 
+                                connectivity_matrix=get_conn_matrix(E_indices, E_indices, k=k, seed=124))
+    connectivity_matrix_connect(net.cell(gid_ranges['E']).branch(0).comp(0), net.cell(gid_ranges['E']).branch(3).comp(3), synapse_type=EE_dend_nmda_synapse, 
+                                connectivity_matrix=get_conn_matrix(E_indices, E_indices, k=k, seed=224))
+
+    # I->E soma and dendrite
+    connectivity_matrix_connect(net.cell(gid_ranges['I']).branch(0).comp(0), net.cell(gid_ranges['E']).branch(0).comp(0), synapse_type=IE_gaba_synapse,
+                                connectivity_matrix=get_conn_matrix(I_indices, E_indices, k=k, seed=125))
+    connectivity_matrix_connect(net.cell(gid_ranges['I']).branch(0).comp(0), net.cell(gid_ranges['E']).branch(3).comp(3), synapse_type=IE_dend_gaba_synapse,
+                                connectivity_matrix=get_conn_matrix(I_indices, E_indices, k=k, seed=225))
+
+
+    connectivity_matrix_connect(net.cell(gid_ranges['I']).branch(0).comp(0), net.cell(gid_ranges['I']).branch(0).comp(0), synapse_type=II_gaba_synapse,
+                                         connectivity_matrix=get_conn_matrix(I_indices, I_indices, k=k, seed=126))
+
+    # Non overlapping cells for input/output of network
+    E_in_gids = list(gid_ranges['E'])
+    E_out_gids = list(gid_ranges['E'])
+    E_out_rate_gids = list(gid_ranges['E_rate'])
+    I_in_gids = list(gid_ranges['I'])
+
+    # cue->E ampa
+    sparse_connect(net.cell(gid_ranges['cue']).branch(0).comp(0), net.cell(E_in_gids).branch(0).comp(0), synapse_type=cue_Esoma_ampa_synapse, p=0.1)
+    sparse_connect(net.cell(gid_ranges['cue']).branch(0).comp(0), net.cell(E_in_gids).branch(3).comp(3), synapse_type=cue_Edend_ampa_synapse, p=0.1)
+
+    # cue->E nmda
+    sparse_connect(net.cell(gid_ranges['cue']).branch(0).comp(0), net.cell(E_in_gids).branch(0).comp(0), synapse_type=cue_Esoma_nmda_synapse, p=0.1)
+    sparse_connect(net.cell(gid_ranges['cue']).branch(0).comp(0), net.cell(E_in_gids).branch(3).comp(3), synapse_type=cue_Edend_nmda_synapse, p=0.1)
+
+    # cue->I ampa
+    sparse_connect(net.cell(gid_ranges['cue']).branch(0).comp(0), net.cell(I_in_gids).branch(0).comp(0), synapse_type=cue_I_ampa_synapse, p=0.1)
+
+
+    connectivity_matrix_connect(net.cell(E_out_gids).branch(0).comp(0), net.cell(E_out_rate_gids).branch(0).comp(0),
+                                synapse_type=exp_synapse, connectivity_matrix=np.eye(len(E_out_gids)).astype(bool))
+
+    connectivity_matrix_connect(net.cell(list(gid_ranges['noise_E'])).branch(0).comp(0), net.cell(list(gid_ranges['E'])).branch(0).comp(0),
+                                synapse_type=noise_Esoma_ampa_synapse, connectivity_matrix=np.eye(num_E_cells).astype(bool))
+
+    connectivity_matrix_connect(net.cell(list(gid_ranges['noise_I'])).branch(0).comp(0), net.cell(list(gid_ranges['I'])).branch(0).comp(0),
+                                synapse_type=noise_I_ampa_synapse, connectivity_matrix=np.eye(num_I_cells).astype(bool))
+
 
     net.copy_node_property_to_edges("global_cell_index")
 
     return net, gid_ranges
 
 def set_train_parameters(net, gid_ranges):
-    net.set('exp_synapse_e_syn', 10.0)
-    net.set('exp_synapse_k_minus', 0.1)
+    net.set('exp_synapse_eAMPA', 10.0)
+    net.set('exp_synapse_gS', 1e-4)
 
     net.set('E_Km_gKm', 1e-5)
     net.set('E_CaL_gCaL', 1e-3)
@@ -358,16 +608,20 @@ def set_train_parameters(net, gid_ranges):
     net.select(edges="all").make_trainable("IE_gaba_gS")
     net.select(edges="all").make_trainable("II_gaba_gS")
     net.select(edges="all").make_trainable("EI_ampa_gS")
+    net.select(edges="all").make_trainable("EI_nmda_gS")
     net.select(edges="all").make_trainable("EE_ampa_gS")
+    net.select(edges="all").make_trainable("EE_nmda_gS")
     net.select(edges="all").make_trainable("EE_dend_ampa_gS")
+    net.select(edges="all").make_trainable("EE_dend_nmda_gS")
     net.select(edges="all").make_trainable("IE_dend_gaba_gS")
 
     net.select(edges="all").make_trainable('cue_Esoma_ampa_gS')
+    net.select(edges="all").make_trainable('cue_Esoma_nmda_gS')
     net.select(edges="all").make_trainable('cue_Edend_ampa_gS')
-    net.select(edges="all").make_trainable('context_Esoma_ampa_gS')
-    net.select(edges="all").make_trainable('context_Edend_ampa_gS')
+    net.select(edges="all").make_trainable('cue_Edend_nmda_gS')
+    net.select(edges="all").make_trainable('noise_Esoma_ampa_gS')
     net.select(edges="all").make_trainable('cue_I_ampa_gS')
-    net.select(edges="all").make_trainable('context_I_ampa_gS')
+    net.select(edges="all").make_trainable('noise_I_ampa_gS')
 
     net.make_trainable("E_Leak_gLeak")
     net.make_trainable("E_dend_Leak_gLeak")
@@ -385,17 +639,21 @@ def set_train_parameters(net, gid_ranges):
     net.make_trainable("I_CaL_gCaL")
     net.make_trainable("I_CaT_gCaT")
 
+    net.make_trainable('cue_Edend_nmda_alpha')
+    net.make_trainable('cue_Edend_nmda_beta')
+    net.make_trainable('cue_Edend_ampa_alpha')
+    net.make_trainable('cue_Edend_ampa_beta')
+
+    net.cell(list(gid_ranges['E'])).make_trainable('axial_resistivity')
+
     parameters = net.get_parameters()
-    key = jax.random.PRNGKey(0)
-    parameters.append({'W_out': jax.random.uniform(key=key,shape=(2, len(gid_ranges['E']),), minval=-0.5, maxval=0.5)})
-    parameters.append({'b_out': jax.random.uniform(key=key,shape=(2, 1), minval=-0.1, maxval=0.1)})
 
     return parameters, None
 
 def get_parameter_names():
-    conn_names = ["cue_Esoma_ampa", "context_Esoma_ampa", "cue_Edend_ampa", "context_Edend_ampa",
-                  "cue_I_ampa", "context_I_ampa",
-                  "IE_gaba", "II_gaba", "EI_ampa", "EE_ampa", "IE_dend_gaba", "EE_dend_ampa"]
+    conn_names = ["cue_Esoma_ampa", "cue_Esoma_nmda", "cue_Edend_ampa", "cue_Edend_nmda", "noise_Esoma_ampa",
+                  "cue_I_ampa", "noise_I_ampa",
+                  "IE_gaba", "II_gaba", "EI_ampa", "EI_nmda", "EE_ampa", "EE_nmda", "IE_dend_gaba", "EE_dend_ampa", "EE_dend_nmda"]
 
     conn_g_names = [f'{name}_gS' for name in conn_names]
     conn_pconn_names = [f'{name}_pconn' for name in conn_names]
@@ -403,55 +661,53 @@ def get_parameter_names():
     biophysics_names = ["E_Leak_gLeak", "E_dend_Leak_gLeak", "I_Leak_gLeak",
                        "E_Km_gKm", "E_CaL_gCaL", "E_CaT_gCaT",
                        "I_Km_gKm", "I_CaL_gCaL", "I_CaT_gCaT",
-                       "E_dend_Km_gKm", "E_dend_CaL_gCaL", "E_dend_CaT_gCaT"]
+                       "E_dend_Km_gKm", "E_dend_CaL_gCaL", "E_dend_CaT_gCaT",
+                       'cue_Edend_nmda_alpha', 'cue_Edend_nmda_beta', 'cue_Edend_ampa_alpha', 'cue_Edend_ampa_beta',
+                       'axial_resistivity']
 
     key_order = conn_g_names + conn_pconn_names + biophysics_names
 
     return key_order, conn_names, biophysics_names
 
-def simulate(params, cue_currents, context_currents):
-    net.delete_stimuli()
-    
-    data_stimuli = net.cell(list(gid_ranges['cue'])).branch(0).comp(0).data_stimulate(cue_currents)
-    data_stimuli = net.cell(list(gid_ranges['context'])).branch(0).comp(0).data_stimulate(context_currents, data_stimuli=data_stimuli)
-
-    net.delete_recordings()
-    net.branch(0).comp(0).record('v')
-    s = jx.integrate(net, t_max=t_max, params=params, checkpoint_lengths=checkpoints, data_stimuli=data_stimuli)
-    # s = jx.integrate(net, t_max=t_max, params=params, data_stimuli=data_stimuli)
-
-    return s
 
 def get_prior_dict():
     # Default is cue->soma, context->dend, cell->soma+dend
     prior_dict = {
         "cue_Esoma_ampa_gS": {'bounds': (-3, -3), 'rescale_function': log_scale_forward},
-        "context_Esoma_ampa_gS": {'bounds': (-3, -3), 'rescale_function': log_scale_forward},
+        "cue_Esoma_nmda_gS": {'bounds': (-3, -3), 'rescale_function': log_scale_forward},
+        "noise_Esoma_ampa_gS": {'bounds': (-3, -3), 'rescale_function': log_scale_forward},
         "cue_I_ampa_gS": {'bounds': (-3, -3), 'rescale_function': log_scale_forward},
-        "context_I_ampa_gS": {'bounds': (-3, -3), 'rescale_function': log_scale_forward},
+        "noise_I_ampa_gS": {'bounds': (-3, -3), 'rescale_function': log_scale_forward},
         "IE_gaba_gS": {'bounds': (-9, -2), 'rescale_function': log_scale_forward},
         "II_gaba_gS": {'bounds': (-9, -2), 'rescale_function': log_scale_forward},
         "EI_ampa_gS": {'bounds': (-9, -2), 'rescale_function': log_scale_forward},
+        "EI_nmda_gS": {'bounds': (-9, -2), 'rescale_function': log_scale_forward},
         "EE_ampa_gS": {'bounds': (-9, -2), 'rescale_function': log_scale_forward},
+        "EE_nmda_gS": {'bounds': (-9, -2), 'rescale_function': log_scale_forward},
 
         "cue_Edend_ampa_gS": {'bounds': (-20, -20), 'rescale_function': log_scale_forward},
-        "context_Edend_ampa_gS": {'bounds': (-20, -20), 'rescale_function': log_scale_forward},
+        "cue_Edend_nmda_gS": {'bounds': (-20, -20), 'rescale_function': log_scale_forward},
         "IE_dend_gaba_gS": {'bounds': (-9, -2), 'rescale_function': log_scale_forward},
         "EE_dend_ampa_gS": {'bounds': (-9, -2), 'rescale_function': log_scale_forward},
+        "EE_dend_nmda_gS": {'bounds': (-9, -2), 'rescale_function': log_scale_forward},
         
         "cue_Esoma_ampa_pconn": {'bounds': (1.0, 1.0), 'rescale_function': linear_scale_forward},
-        "context_Esoma_ampa_pconn": {'bounds': (1.0, 1.0), 'rescale_function': linear_scale_forward},
+        "cue_Esoma_nmda_pconn": {'bounds': (1.0, 1.0), 'rescale_function': linear_scale_forward},
+        "noise_Esoma_ampa_pconn": {'bounds': (1.0, 1.0), 'rescale_function': linear_scale_forward},
         "cue_I_ampa_pconn": {'bounds': (1.0, 1.0), 'rescale_function': linear_scale_forward},
-        "context_I_ampa_pconn": {'bounds': (1.0, 1.0), 'rescale_function': linear_scale_forward},
+        "noise_I_ampa_pconn": {'bounds': (1.0, 1.0), 'rescale_function': linear_scale_forward},
         "IE_gaba_pconn": {'bounds': (0, 0.3), 'rescale_function': linear_scale_forward},
         "II_gaba_pconn": {'bounds': (0, 0.3), 'rescale_function': linear_scale_forward},
         "EI_ampa_pconn": {'bounds': (0, 0.3), 'rescale_function': linear_scale_forward},
+        "EI_nmda_pconn": {'bounds': (0, 0.3), 'rescale_function': linear_scale_forward},
         "EE_ampa_pconn": {'bounds': (0, 0.3), 'rescale_function': linear_scale_forward},
+        "EE_nmda_pconn": {'bounds': (0, 0.3), 'rescale_function': linear_scale_forward},
 
         "cue_Edend_ampa_pconn": {'bounds': (0.0, 0.0), 'rescale_function': linear_scale_forward},
-        "context_Edend_ampa_pconn": {'bounds': (0.0, 0.0), 'rescale_function': linear_scale_forward},
+        "cue_Edend_nmda_pconn": {'bounds': (0.0, 0.0), 'rescale_function': linear_scale_forward},
         "IE_dend_gaba_pconn": {'bounds': (0, 0.3), 'rescale_function': linear_scale_forward},
         "EE_dend_ampa_pconn": {'bounds': (0, 0.3), 'rescale_function': linear_scale_forward},
+        "EE_dend_nmda_pconn": {'bounds': (0, 0.3), 'rescale_function': linear_scale_forward},
 
         "E_Leak_gLeak": {'bounds': (-9, -2), 'rescale_function': log_scale_forward},
         "E_dend_Leak_gLeak": {'bounds': (-9, -2), 'rescale_function': log_scale_forward},
@@ -466,7 +722,15 @@ def get_prior_dict():
 
         "E_dend_Km_gKm": {'bounds': (-9, -2), 'rescale_function': log_scale_forward},
         "E_dend_CaL_gCaL": {'bounds': (-9, -2), 'rescale_function': log_scale_forward},
-        "E_dend_CaT_gCaT": {'bounds': (-9, -2), 'rescale_function': log_scale_forward},    
+        "E_dend_CaT_gCaT": {'bounds': (-9, -2), 'rescale_function': log_scale_forward},
+
+        "cue_Edend_nmda_alpha": {'bounds': (0.072, 0.072), 'rescale_function': linear_scale_forward},
+        "cue_Edend_nmda_beta": {'bounds': (0.0066, 0.0066), 'rescale_function': linear_scale_forward},
+        "cue_Edend_ampa_alpha": {'bounds': (1.1, 1.1), 'rescale_function': linear_scale_forward},
+        "cue_Edend_ampa_beta": {'bounds': (0.19, 0.19), 'rescale_function': linear_scale_forward},
+
+        "axial_resistivity": {'bounds': (300.0, 300.0), 'rescale_function': linear_scale_forward},
+
         }
     
     return prior_dict
@@ -475,22 +739,6 @@ def initialize_params(prior_dict, params):
     key_mapping = {list(param_dict.keys())[0]: idx for idx, param_dict in enumerate(params)}
     theta_dict = {param_name: param_dict['rescale_function'](thetai[param_idx].numpy(), param_dict['bounds']) for 
                     param_idx, (param_name, param_dict) in enumerate(prior_dict.items())}
-
-def loss_fn(opt_params, cue_currents, context_currents, target):
-    rate_scale = 1.0
-    params = transform.forward(opt_params)
-    s = simulate(params, cue_currents, context_currents)
-
-    output = jnp.matmul(params[-2]['W_out'], s[list(gid_ranges['E_rate']), :] * rate_scale).squeeze() + params[-1]['b_out']
-
-    # Only apply loss to first two dimensions for target location, not context in third dimension
-    loss = jnp.mean(jnp.square(output[:2, burn_in:] - target[:2,burn_in:]))
-
-    return loss
-
-def batched_loss_fn(opt_params, cue_currents, context_currents, target):
-    loss = batched_loss(opt_params, cue_currents, context_currents, target)
-    return jnp.mean(loss)
     
 
 def get_currents(inputs, gid_ranges, t_max=500, dt=0.025):
@@ -563,9 +811,6 @@ def get_currents_nocontext(inputs, gid_ranges, t_max=500, dt=0.025):
 
     cue_amplitudes = gaussian_tuning(inputs[0:2], cue_tuning, cue_sigma)
     cue_amplitudes = (np.sum(cue_amplitudes, axis=1) / cue_tuning_denom).reshape(-1, 1)
-    baseline_amplitudes = gaussian_tuning(np.array([0.0, 0.0]), cue_tuning, cue_sigma)
-    baseline_amplitudes = (np.sum(baseline_amplitudes, axis=1) / cue_tuning_denom).reshape(-1, 1)
-
 
     # Define input start/stop times
     stim_len = 1000
@@ -574,19 +819,64 @@ def get_currents_nocontext(inputs, gid_ranges, t_max=500, dt=0.025):
     cue_start = 10000
     cue_stop = cue_start + stim_len
 
-    context_start = 10000
-    context_stop = context_start + stim_len
-
     # cue currents
     cue_currents = np.zeros((len(gid_ranges['cue']), len(time_vec)))
     cue_currents[:, cue_start:cue_stop] = cue_amplitudes
 
     cue_currents = jnp.asarray(cue_currents * stim_scaling)
 
-    # context currents
-    context_currents = np.zeros((len(gid_ranges['context']), len(time_vec)))
+    # set target
+    target = jnp.zeros((2, len(time_vec) + 1))
+    target = target.at[:, cue_start:].set(inputs[0:2].reshape(-1,1))
 
-    target = jnp.zeros((3, len(time_vec) + 1))
-    target = target.at[:2, cue_start:].set(inputs[0:2].reshape(-1,1) * inputs[2])
+    return cue_currents, target
 
-    return cue_currents, context_currents, target
+def get_currents_dms(inputs, gid_ranges, t_max=500, dt=0.025):
+    """Stimulation currents for delayed match to sample task"""
+    time_vec = jnp.arange(0, t_max, dt)
+    
+    cue_rng = np.random.default_rng(12345)
+
+    # calculate cue amplitudes
+    cue_dim = 1
+    cue_tuning = cue_rng.uniform(-3, 3, (len(gid_ranges['cue']), cue_dim))
+    cue_sigma = np.array(0.3)
+    cue_tuning_denom = gaussian_tuning(0, 0, cue_sigma) * cue_dim # ensures input intensity equals 1
+
+
+    cue1_amplitudes = gaussian_tuning(inputs[0], cue_tuning, cue_sigma)
+    cue1_amplitudes = (np.sum(cue1_amplitudes, axis=1) / cue_tuning_denom).reshape(-1, 1)
+
+    cue2_amplitudes = gaussian_tuning(inputs[1], cue_tuning, cue_sigma)
+    cue2_amplitudes = (np.sum(cue2_amplitudes, axis=1) / cue_tuning_denom).reshape(-1, 1)
+
+
+    # Define input start/stop times
+    stim_len = 1000
+    stim_scaling = 0.1
+
+    cue1_start = 5000
+    cue1_stop = cue1_start + stim_len
+
+    cue2_start = 15000
+    cue2_stop = cue2_start + stim_len
+
+
+    # cue currents
+    cue_currents = np.zeros((len(gid_ranges['cue']), len(time_vec)))
+    cue_currents[:, cue1_start:cue1_stop] = cue1_amplitudes
+    cue_currents[:, cue2_start:cue2_stop] = cue2_amplitudes
+
+    cue_currents = jnp.asarray(cue_currents * stim_scaling)
+
+    # set target
+    if inputs[0] == inputs[1]:
+        target_val = 2
+    else:
+        target_val = -2
+
+    target = jnp.zeros((1, len(time_vec) + 1))
+    target = target.at[:, cue2_start:].set(target_val)
+
+    return cue_currents, target
+    
